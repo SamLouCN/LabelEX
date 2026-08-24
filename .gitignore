@@ -1,0 +1,8 @@
+*.vcxproj.user
+.vs/
+test.cpp
+LabelEX/Debug
+LabelEX/x64
+LabelEX/resource.aps
+Debug/
+x64/
