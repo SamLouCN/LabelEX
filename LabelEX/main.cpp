@@ -7,18 +7,25 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #endif
 #define ID_OPEN_IMG 1001
 #define ID_OPEN_FOLDER 1002
-#define ID_OPEN_VIDEO 1003
+#define ID_CONVERT_VIDEO 1003
 #define ID_EXPORT_CONFIG 2001
 #define ID_VERSION 3001
+#define WM_USER_REFRESH_LIST (WM_USER + 100)
 
 #include "main.h"
 
 static wchar_t szWindowClass[] = L"LEX";
 static wchar_t szTitle[] = L"LabelEX";
 HINSTANCE hInst;
+HANDLE hExitEvent = NULL;
+HANDLE hMonitorThread = NULL;
+HWND hPagePicture;
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 BOOL DoCreateDialog(HWND hWnd, HWND* hPagePicture);
-HWND hPagePicture;
+void StopFolderMonitor();
+BOOL StartFolderMonitor(HWND hDlg);
+
+int IDCForDpi(HWND hWnd, int oldIDC);
 
 HWND DoCreateMenu(HWND hWnd)
 {
@@ -27,9 +34,8 @@ HWND DoCreateMenu(HWND hWnd)
 	HMENU hSubMenuOption = CreatePopupMenu();
 	HMENU hSubMenuAbout = CreatePopupMenu();
 
-	AppendMenu(hSubMenuFile, MF_STRING, ID_OPEN_IMG, L"打开图片");
 	AppendMenu(hSubMenuFile, MF_STRING, ID_OPEN_FOLDER, L"打开文件夹");
-	AppendMenu(hSubMenuFile, MF_STRING, ID_OPEN_VIDEO, L"打开视频");
+	AppendMenu(hSubMenuFile, MF_STRING, ID_CONVERT_VIDEO, L"转换视频");
 	AppendMenu(hSubMenuOption, MF_STRING, ID_EXPORT_CONFIG, L"导出设置");
 	AppendMenu(hSubMenuAbout, MF_STRING, ID_VERSION, L"版本");
 
@@ -51,6 +57,103 @@ BOOL DoCreateDialog(HWND hWnd, HWND* hPagePicture)
 	}
 	ShowWindow(*hPagePicture, SW_SHOW);
 	return TRUE;
+}
+
+DWORD WINAPI FolderMonitorThread(LPVOID lpParam)
+{
+	HWND hDlg = (HWND)lpParam;
+
+	wchar_t szLocalPath[MAX_PATH];
+	StringCchCopy(szLocalPath, _countof(szLocalPath), szFolderPath);
+
+	HANDLE hChange = FindFirstChangeNotification(
+		szLocalPath,
+		FALSE,
+		FILE_NOTIFY_CHANGE_FILE_NAME
+	);
+	if (hChange == INVALID_HANDLE_VALUE)
+	{
+		return 0;
+	}
+
+	HANDLE hWaitArray[2] = {hChange, hExitEvent};
+
+	while (TRUE)
+	{
+		DWORD dwWait = WaitForMultipleObjects(2, hWaitArray, FALSE, INFINITE);
+		if (dwWait == WAIT_OBJECT_0)
+		{
+			PostMessage(hDlg, WM_USER_REFRESH_LIST, 0, 0);
+			if (!FindNextChangeNotification(hChange))
+			{
+				break;
+			}
+		}
+		else if (dwWait == WAIT_OBJECT_0 + 1)
+		{
+			break;
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	FindCloseChangeNotification(hChange);
+	return 0;
+}
+
+BOOL StartFolderMonitor(HWND hDlg)
+{
+	if (szFolderPath[0] == 0)
+	{
+		return FALSE;
+	}
+	StopFolderMonitor();
+	hExitEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+	if (!hExitEvent)
+	{
+		return FALSE;
+	}
+	hMonitorThread = CreateThread(NULL, 0, FolderMonitorThread, hDlg, 0, NULL);
+	if (!hMonitorThread)
+	{
+		CloseHandle(hExitEvent);
+		hExitEvent = NULL;
+		return FALSE;
+	}
+	return TRUE;
+}
+
+void StopFolderMonitor()
+{
+	if (hExitEvent)
+	{
+		SetEvent(hExitEvent);
+	}
+	if (hMonitorThread)
+	{
+		DWORD dwWait = WaitForSingleObject(hMonitorThread, 2000);
+		if (dwWait == WAIT_TIMEOUT)
+		{
+			MessageBox(NULL, L"Folder Monitor is not responding", L"Error",NULL);
+		}
+		CloseHandle(hMonitorThread);
+		hMonitorThread = NULL;
+	}
+
+	if (hExitEvent)
+	{
+		CloseHandle(hExitEvent);
+		hExitEvent = NULL;
+	}
+}
+
+int IDCForDpi(HWND hWnd, int oldIDC)
+{
+	UINT newDpi = GetDpiForWindow(hWnd);
+	int newIDC = MulDiv(oldIDC, newDpi, 96);
+	return newIDC;
 }
 
 int WINAPI wWinMain(
@@ -119,7 +222,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_CREATE:
 		DoCreateMenu(hWnd);
 		DoCreateDialog(hWnd, &hPagePicture);
-		SetWindowLong(hWnd, GWL_EXSTYLE, GetWindowLong(hWnd, GWL_EXSTYLE) | WS_EX_COMPOSITED);
 		return 0;
 	case WM_COMMAND:
 	{
@@ -131,6 +233,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				L"LabelEX - for Yolo\n版本: 0.0.0\n(Developer)Build 00000",
 				L"关于",
 				MB_OK);
+			return 0;
+		case ID_OPEN_FOLDER:
+		{
+			DoSelectFolder(hPagePicture);
+			return 0;
+		}
 		}
 		return 0;
 	}
@@ -169,6 +277,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		return 0;
 	}
 	case WM_DESTROY:
+		StopFolderMonitor();
 		PostQuitMessage(0);
 		return 0;
 	default:
