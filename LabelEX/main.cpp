@@ -5,7 +5,7 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #ifndef UNICODE
 #define UNICODE
 #endif
-#define ID_OPEN_IMG 1001
+#define ID_OPEN_YAML 1001
 #define ID_OPEN_FOLDER 1002
 #define ID_CONVERT_VIDEO 1003
 #define ID_EXPORT_CONFIG 2001
@@ -15,12 +15,15 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
 #include "main.h"
 
+using namespace Gdiplus;
+
 static wchar_t szWindowClass[] = L"LEX";
 static wchar_t szTitle[] = L"LabelEX";
 HINSTANCE hInst;
 HANDLE hExitEvent = NULL;
 HANDLE hMonitorThread = NULL;
 HWND hPagePicture;
+
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 BOOL DoCreateDialog(HWND hWnd, HWND* hPagePicture);
 void StopFolderMonitor();
@@ -35,9 +38,10 @@ HWND DoCreateMenu(HWND hWnd)
 	HMENU hSubMenuOption = CreatePopupMenu();
 	HMENU hSubMenuAbout = CreatePopupMenu();
 
+	AppendMenu(hSubMenuFile, MF_STRING, ID_OPEN_YAML, L"打开数据集配置文件（暂不支持）");
 	AppendMenu(hSubMenuFile, MF_STRING, ID_OPEN_FOLDER, L"打开文件夹");
-	AppendMenu(hSubMenuFile, MF_STRING, ID_CONVERT_VIDEO, L"转换视频");
-	AppendMenu(hSubMenuOption, MF_STRING, ID_EXPORT_CONFIG, L"导出设置");
+	AppendMenu(hSubMenuFile, MF_STRING, ID_CONVERT_VIDEO, L"转换视频为图片集（暂不支持）");
+	AppendMenu(hSubMenuOption, MF_STRING, ID_EXPORT_CONFIG, L"导出设置（暂不支持）");
 	AppendMenu(hSubMenuAbout, MF_STRING, ID_VERSION, L"版本");
 
 	AppendMenu(hMenu, MF_STRING | MF_POPUP, (UINT_PTR)hSubMenuFile, L"文件(&L)");
@@ -238,6 +242,11 @@ int WINAPI wWinMain(
 )
 {
 	SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+
+	GdiplusStartupInput gdiplusStartupInput;
+	ULONG_PTR gdiplusToken;
+	GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
+
 	WNDCLASSEX wcex;
 	wcex.cbSize = sizeof(WNDCLASSEX);
 	wcex.style = CS_HREDRAW | CS_VREDRAW;
@@ -286,6 +295,7 @@ int WINAPI wWinMain(
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}
+	GdiplusShutdown(gdiplusToken);
 	return (int)msg.wParam;
 }
 
@@ -304,7 +314,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 		case ID_VERSION:
 			MessageBox(hWnd,
-				L"LabelEX - for Yolo\n版本: 0.0.0\n(Developer)Build 00000",
+				L"LabelEX - for Yolo\n版本: 0.0.0\n(Developer)Build 00003",
 				L"关于",
 				MB_OK);
 			return 0;
@@ -330,7 +340,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	{
 		MINMAXINFO* pInfo = (MINMAXINFO*)lParam;
 		UINT dpi = GetDpiForWindow(hWnd);
-		int minWidth = MulDiv(800, dpi, 96);
+		int minWidth = MulDiv(980, dpi, 96);
 		int minHeight = MulDiv(600, dpi, 96);
 		pInfo->ptMinTrackSize.x = minWidth;
 		pInfo->ptMinTrackSize.y = minHeight;
