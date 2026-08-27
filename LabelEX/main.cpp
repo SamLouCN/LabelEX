@@ -11,6 +11,7 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #define ID_EXPORT_CONFIG 2001
 #define ID_VERSION 3001
 #define WM_USER_REFRESH_LIST (WM_USER + 100)
+#define WM_USER_UPDATE_ITEM (WM_USER + 101)
 
 #include "main.h"
 
@@ -66,27 +67,98 @@ DWORD WINAPI FolderMonitorThread(LPVOID lpParam)
 	wchar_t szLocalPath[MAX_PATH];
 	StringCchCopy(szLocalPath, _countof(szLocalPath), szFolderPath);
 
-	HANDLE hChange = FindFirstChangeNotification(
+	HANDLE hDir = CreateFile(
 		szLocalPath,
-		FALSE,
-		FILE_NOTIFY_CHANGE_FILE_NAME
+		FILE_LIST_DIRECTORY,
+		FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+		NULL,
+		OPEN_EXISTING,
+		FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED,
+		NULL
 	);
-	if (hChange == INVALID_HANDLE_VALUE)
+	if (hDir == INVALID_HANDLE_VALUE)
 	{
 		return 0;
 	}
 
-	HANDLE hWaitArray[2] = {hChange, hExitEvent};
+	BYTE buffer[65536];
+	DWORD dwBytesReturned;
+	OVERLAPPED overlapped = { 0 };
+	overlapped.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+
+	HANDLE hWaitArray[2] = {overlapped.hEvent, hExitEvent};
 
 	while (TRUE)
 	{
+		if (!ReadDirectoryChangesW(
+			hDir,
+			buffer,
+			sizeof(buffer),
+			FALSE,
+			FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_LAST_WRITE,
+			&dwBytesReturned,
+			&overlapped,
+			NULL
+		))
+		{
+			break;
+		}
 		DWORD dwWait = WaitForMultipleObjects(2, hWaitArray, FALSE, INFINITE);
 		if (dwWait == WAIT_OBJECT_0)
 		{
-			PostMessage(hDlg, WM_USER_REFRESH_LIST, 0, 0);
-			if (!FindNextChangeNotification(hChange))
+			if (GetOverlappedResult(hDir, &overlapped, &dwBytesReturned, FALSE))
 			{
-				break;
+				BYTE* pBuffer = buffer;
+				while (TRUE)
+				{
+					PFILE_NOTIFY_INFORMATION pNotify = (PFILE_NOTIFY_INFORMATION)pBuffer;
+					wchar_t szFileName[MAX_PATH];
+					DWORD len = pNotify->FileNameLength / sizeof(WCHAR);
+					if (len < MAX_PATH)
+					{
+						StringCchCopyN(szFileName, _countof(szFileName), pNotify->FileName, len);
+						szFileName[len] = L'\0';
+					}
+
+					wchar_t* pExt = PathFindExtension(szFileName);
+					if (pExt && _wcsicmp(pExt, L".txt") == 0)
+					{
+						wchar_t szBaseName[MAX_PATH];
+						StringCchCopy(szBaseName, _countof(szBaseName), szFileName);
+						PathRemoveExtension(szBaseName);
+
+						switch (pNotify->Action)
+						{
+						case FILE_ACTION_ADDED:
+						case FILE_ACTION_MODIFIED:
+						case FILE_ACTION_RENAMED_NEW_NAME:
+							PostMessage(hPagePicture, WM_USER_UPDATE_ITEM, (WPARAM)_wcsdup(szBaseName), (LPARAM)TRUE);
+							break;
+						case FILE_ACTION_REMOVED:
+						case FILE_ACTION_RENAMED_OLD_NAME:
+							PostMessage(hPagePicture, WM_USER_UPDATE_ITEM, (WPARAM)_wcsdup(szBaseName), (LPARAM)FALSE);
+							break;
+						}
+					}
+					else if (pExt && IsImageFile(pExt))
+					{
+						switch (pNotify->Action)
+						{
+						case FILE_ACTION_ADDED:
+						case FILE_ACTION_MODIFIED:
+						case FILE_ACTION_RENAMED_NEW_NAME:
+						case FILE_ACTION_REMOVED:
+						case FILE_ACTION_RENAMED_OLD_NAME:
+							PostMessage(hPagePicture, WM_USER_REFRESH_LIST, 0, 0);
+							break;
+						}
+					}
+					if (pNotify->NextEntryOffset == 0)
+					{
+						break;
+					}
+					pBuffer += pNotify->NextEntryOffset;
+				}
 			}
 		}
 		else if (dwWait == WAIT_OBJECT_0 + 1)
@@ -97,9 +169,11 @@ DWORD WINAPI FolderMonitorThread(LPVOID lpParam)
 		{
 			break;
 		}
+		ResetEvent(overlapped.hEvent);
 	}
 
-	FindCloseChangeNotification(hChange);
+	CloseHandle(overlapped.hEvent);
+	CloseHandle(hDir);
 	return 0;
 }
 

@@ -3,6 +3,7 @@
 #endif
 #define IDC_LISTVIEW 5001
 #define WM_USER_REFRESH_LIST (WM_USER + 100)
+#define WM_USER_UPDATE_ITEM (WM_USER + 101)
 
 #include "main.h"
 
@@ -116,6 +117,28 @@ void RefreshList(HWND hWnd)
 	FindClose(hFind);
 }
 
+void UpdateSingleItemStatus(HWND hDlg, LPCWSTR szBaseName, BOOL bExist)
+{
+	HWND hList = GetDlgItem(hPagePicture, IDC_LISTVIEW);
+	
+	int nCount = ListView_GetItemCount(hList);
+	wchar_t szCurrentName[MAX_PATH];
+	wchar_t szCurrentBase[MAX_PATH];
+
+	for (int i = 0; i < nCount; i++)
+	{
+		ListView_GetItemText(hList, i, 1, szCurrentName, MAX_PATH);
+
+		StringCchCopy(szCurrentBase, _countof(szCurrentBase), szCurrentName);
+		PathRemoveExtension(szCurrentBase);
+
+		if (_wcsicmp(szCurrentBase, szBaseName) == 0)
+		{
+			ListView_SetItemText(hList, i, 0, (LPWSTR)(bExist ? L"\u2714" : L"    \u2716"));
+		}
+	}
+}
+
 BOOL IsImageFile(LPCWSTR szExt)
 {
 	return (_wcsicmp(szExt, L".jpg") == 0 ||
@@ -144,11 +167,11 @@ BOOL DoCreateListView(HWND hWnd)
 	col.mask = LVCF_TEXT | LVCF_WIDTH;
 
 	col.pszText = (LPWSTR)L"状态";
-	col.cx = 60;
+	col.cx = IDCForDpi(hList, 50);
 	ListView_InsertColumn(hList, 0 ,&col);
 
 	col.pszText = (LPWSTR)L"文件名";
-	col.cx = 220;
+	col.cx = IDCForDpi(hList, 230);
 	ListView_InsertColumn(hList, 1, &col);
 
 	return TRUE;
@@ -169,7 +192,7 @@ INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 		RECT rcDlg;
 		GetClientRect(hDlg, &rcDlg);
 		UINT margin = IDCForDpi(hDlg, 10);
-		UINT listViewWidth = IDCForDpi(hDlg, 300);
+		UINT listViewWidth = IDCForDpi(hDlg, 280);
 		SetWindowPos(GetDlgItem(hDlg, IDC_LISTVIEW), NULL, margin, margin, listViewWidth, rcDlg.bottom - rcDlg.top - 2 * margin, SWP_NOZORDER);
 
 		return 0;
@@ -177,6 +200,14 @@ INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 	case WM_USER_REFRESH_LIST:
 	{
 		RefreshList(hDlg);
+		return 0;
+	}
+	case WM_USER_UPDATE_ITEM:
+	{
+		LPWSTR szBaseName = (LPWSTR)wParam;
+		BOOL bExist = (BOOL)lParam;
+		UpdateSingleItemStatus(hDlg, szBaseName, bExist);
+		free(szBaseName);
 		return 0;
 	}
 	}
