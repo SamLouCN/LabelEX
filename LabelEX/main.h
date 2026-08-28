@@ -1,10 +1,13 @@
 #pragma once
 #include <windows.h>
+#include <windowsx.h>
+#include <string.h>
 #include <commctrl.h>
 #include <shobjidl.h>
 #include <shlwapi.h>
 #include <strsafe.h>
 #include <gdiplus.h>
+#include <vector>
 #include "resource.h"
 
 INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);

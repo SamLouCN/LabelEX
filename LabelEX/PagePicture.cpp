@@ -9,15 +9,34 @@
 
 using namespace Gdiplus;
 
+struct BBox {
+	int left, top, right, bottom;
+	int classId;
+	bool selected;
+};
+
 Bitmap* pCurrentImage = nullptr;
 HWND hImageCtrl = nullptr;
+std::vector<BBox> bboxes;
+int currentClassId = 0;
+int selectedIndex = -1;
+int threshold = 10;
+BOOL bCreating = TRUE;
+WNDPROC oldPicProc = NULL;
+enum DragMode {None, Moving, Resizing, Creating};
+DragMode dragMode = None;
+int resizeHandle = -1;
+POINT dragStart;
+POINT dragOffset;
+BBox originalBox;
+wchar_t szFolderPath[MAX_PATH] = { 0 };
+std::wstring currentImagePath;
 
 void DoSelectFolder(HWND hWnd);
 void RefreshList(HWND hWnd);
 BOOL IsImageFile(LPCWSTR szExt);
 BOOL DoCreateListView(HWND hWnd);
-
-wchar_t szFolderPath[MAX_PATH] = { 0 };
+void LoadBBoxesFromFile(const std::wstring& filePath, int imgWidth, int imgHeight);
 
 void DoSelectFolder(HWND hWnd)
 {
@@ -199,6 +218,35 @@ void LoadImageToDisplay(LPCWSTR szFilePath)
 		pCurrentImage = nullptr;
 	}
 
+	if (szFilePath && *szFilePath)
+	{
+		currentImagePath = szFilePath;
+	}
+	else
+	{
+		currentImagePath.clear();
+	}
+
+	if (pCurrentImage)
+	{
+		std::wstring txtPath = currentImagePath;
+		size_t dotPos = txtPath.find_last_of(L'.');
+		if (dotPos != std::wstring::npos)
+		{
+			txtPath = txtPath.substr(0, dotPos) + L".txt";
+		}
+		else
+		{
+			txtPath += L".txt";
+		}
+		LoadBBoxesFromFile(txtPath, pCurrentImage->GetWidth(), pCurrentImage->GetHeight());
+	}
+	else
+	{
+		bboxes.clear();
+		selectedIndex = -1;
+	}
+		
 	if (hImageCtrl)
 	{
 		InvalidateRect(hImageCtrl, NULL, TRUE);
@@ -241,17 +289,532 @@ void SelectNextImage(HWND hList)
 	SelectImageByIndex(hList, nextIndex);
 }
 
+POINT ControlToImage(POINT ptCtrl)
+{
+	POINT result = { 0, 0 };
+	if (!pCurrentImage)
+	{
+		return result;
+	}
+	int imgWidth = pCurrentImage->GetWidth();
+	int imgHeight = pCurrentImage->GetHeight();
+	RECT rcClient;
+	GetClientRect(GetDlgItem(hPagePicture, IDC_PICTURE), &rcClient);
+	int ctrlWidth = rcClient.right - rcClient.left;
+	int ctrlHeight = rcClient.bottom - rcClient.top;
+	float ratio = min((float)ctrlWidth / imgWidth, (float)ctrlHeight / imgHeight);
+	int drawWidth = (int)(imgWidth * ratio);
+	int drawHeight = (int)(imgHeight * ratio);
+	int offsetX = (ctrlWidth - drawWidth) / 2;
+	int offsetY = (ctrlHeight - drawHeight) / 2;
+	result.x = (int)((ptCtrl.x - offsetX) / ratio);
+	result.y = (int)((ptCtrl.y - offsetY) / ratio);
+	result.x = max(0, min(imgWidth - 1, result.x));
+	result.y = max(0, min(imgHeight - 1, result.y));
+	return result;
+}
+
+RECT ImageToControl(const BBox& box)
+{
+	RECT rc = { 0 };
+	if (!pCurrentImage)
+	{
+		return rc;
+	}
+	int imgWidth = pCurrentImage->GetWidth();
+	int imgHeight = pCurrentImage->GetHeight();
+	RECT rcClient;
+	GetClientRect(GetDlgItem(hPagePicture, IDC_PICTURE), &rcClient);
+	int ctrlWidth = rcClient.right - rcClient.left;
+	int ctrlHeight = rcClient.bottom - rcClient.top;
+	float ratio = min((float)ctrlWidth / imgWidth, (float)ctrlHeight / imgHeight);
+	int drawWidth = (int)(imgWidth * ratio);
+	int drawHeight = (int)(imgHeight * ratio);
+	int offsetX = (ctrlWidth - drawWidth) / 2;
+	int offsetY = (ctrlHeight - drawHeight) / 2;
+	rc.left = (int)(box.left * ratio) + offsetX;
+	rc.top = (int)(box.top * ratio) + offsetY;
+	rc.right = (int)(box.right * ratio) + offsetX;
+	rc.bottom = (int)(box.bottom * ratio) + offsetY;
+	return rc;
+}
+
+void DrawHandles(Graphics& graphics, const RECT& rc)
+{
+	int handleSize = 8;
+	SolidBrush brush(Color(255, 255, 255, 255));
+	Pen pen(Color(255, 0, 0, 0));
+	POINT pts[8] = {
+		{ rc.left, rc.top },
+		{ (rc.left + rc.right) / 2, rc.top },
+		{ rc.right, rc.top },
+		{ rc.right, (rc.top + rc.bottom) / 2 },
+		{ rc.right, rc.bottom },
+		{ (rc.left + rc.right) / 2, rc.bottom },
+		{ rc.left, rc.bottom },
+		{ rc.left, (rc.top + rc.bottom) / 2 }
+	};
+	for (int i = 0; i < 8; ++i)
+	{
+		graphics.FillRectangle(&brush, pts[i].x - handleSize / 2, pts[i].y - handleSize / 2, handleSize, handleSize);
+		graphics.DrawRectangle(&pen, pts[i].x - handleSize / 2, pts[i].y - handleSize / 2, handleSize, handleSize);
+	}
+}
+
+void ClampRect(BBox& box, int minX, int minY, int maxX, int maxY)
+{
+	box.left = max(minX, min(box.left, maxX));
+	box.right = max(minX, min(box.right, maxX));
+	box.top = max(minY, min(box.top, maxY));
+	box.bottom = max(minY, min(box.bottom, maxY));
+	if (box.left > box.right) std::swap(box.left, box.right);
+	if (box.top > box.bottom) std::swap(box.top, box.bottom);
+}
+
+int HitTestHandle(HWND hWnd, POINT ptCtrl)
+{
+	if (selectedIndex == -1)
+	{
+		return -1;
+	}
+	const BBox& box = bboxes[selectedIndex];
+	RECT rc = ImageToControl(box);
+	POINT pts[8] = {
+		{ rc.left, rc.top },
+		{ (rc.left + rc.right) / 2, rc.top },
+		{ rc.right, rc.top },
+		{ rc.right, (rc.top + rc.bottom) / 2 },
+		{ rc.right, rc.bottom },
+		{ (rc.left + rc.right) / 2, rc.bottom },
+		{ rc.left, rc.bottom },
+		{ rc.left, (rc.top + rc.bottom) / 2 }
+	};
+	int handleSize = 8;
+	for (int i = 0; i < 8; ++i)
+	{
+		RECT hr = { pts[i].x - handleSize / 2, pts[i].y - handleSize / 2,
+			pts[i].x + handleSize / 2, pts[i].y + handleSize / 2
+		};
+		if (PtInRect(&hr, ptCtrl))
+		{
+			return i;
+		}
+	}
+	return -1;
+}
+
+void SaveBBoxesToFile(HWND hWnd, const std::vector<BBox>& boxes, int imgWidth, int imgHeight, std::wstring& filePath) 
+{
+	if (boxes.empty()) {
+		MessageBox(hWnd, L"No Label added!", L"Notice", MB_OK);
+		return;
+	}
+	FILE* file = nullptr;
+	errno_t err = _wfopen_s(&file, filePath.c_str(), L"w");
+	if (err != 0 || file == nullptr)
+	{
+		MessageBox(hWnd, L"Failed to create txt file", L"Error", MB_OK);
+		return;
+	}
+
+	for (const auto& box : boxes)
+	{
+		int w = box.right - box.left;
+		int h = box.bottom - box.top;
+		if (w <= 0 || h <= 0) continue;
+
+		float xc = (box.left + w / 2.0f) / imgWidth;
+		float yc = (box.top + h / 2.0f) / imgHeight;
+		float wn = (float)w / imgWidth;
+		float hn = (float)h / imgHeight;
+
+		fprintf(file, "%d %.6f %.6f %.6f %.6f\n", box.classId, xc, yc, wn, hn);
+	}
+	fclose(file);
+}
+
+void LoadBBoxesFromFile(const std::wstring& filePath, int imgWidth, int imgHeight)
+{
+	bboxes.clear();
+	selectedIndex = -1;
+	FILE* file = nullptr;
+	errno_t err = _wfopen_s(&file, filePath.c_str(), L"r");
+	if (err != 0 || file == nullptr)
+	{
+		return;
+	}
+	int classId;
+	float xc, yc, wn, hn;
+	while (fscanf_s(file, "%d %f %f %f %f", &classId, &xc, &yc, &wn, &hn) == 5)
+	{
+		BBox box;
+		box.classId = classId;
+		box.selected = false;
+		box.left = (int)((xc - wn / 2.0f) * imgWidth);
+		box.top = (int)((yc - hn / 2.0f) * imgHeight);
+		box.right = (int)((xc + wn / 2.0f) * imgWidth);
+		box.bottom = (int)((yc + hn / 2.0f) * imgHeight);
+		box.left = max(0, min(box.left, imgWidth));
+		box.right = max(0, min(box.right, imgWidth));
+		box.top = max(0, min(box.top, imgHeight));
+		box.bottom = max(0, min(box.bottom, imgHeight));
+		if (box.left > box.right) std::swap(box.left, box.right);
+		if (box.top > box.bottom) std::swap(box.top, box.bottom);
+		bboxes.push_back(box);
+	}
+	fclose(file);
+}
+
+Color GetClassColor(int classId)
+{
+	switch (classId) {
+	case 1: return Color(255, 59, 48);
+	case 2: return Color(255, 149, 0);
+	case 3: return Color(255, 204, 0);
+	case 4: return Color(52, 199, 89);
+	case 5: return Color(0, 122, 255);
+	case 6: return Color(175, 82, 222);
+	default: return Color(255, 0, 0);
+	}
+}
+
+LRESULT CALLBACK PicSubclassProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	switch (message)
+	{
+	case WM_PAINT:
+	{
+		PAINTSTRUCT ps;
+		HDC hdc = BeginPaint(hWnd, &ps);
+		RECT rcClient;
+		GetClientRect(hWnd, &rcClient);
+		int w = rcClient.right - rcClient.left;
+		int h = rcClient.bottom - rcClient.top;
+
+		HDC hdcMem = CreateCompatibleDC(hdc);
+		HBITMAP hbmMem = CreateCompatibleBitmap(hdc, w, h);
+		HBITMAP hbmOld = (HBITMAP)SelectObject(hdcMem, hbmMem);
+
+		HBRUSH hBrush = CreateSolidBrush(RGB(255, 255, 255));
+		FillRect(hdcMem, &rcClient, hBrush);
+		DeleteObject(hBrush);
+
+		HFONT hFont = CreateFont(
+			40, 0, 0, 0,
+			FW_BOLD, FALSE, FALSE, FALSE,
+			DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,
+			DEFAULT_PITCH | FF_DONTCARE, L"Microsoft Yahei UI"
+		);
+		HFONT hOldFont = (HFONT)SelectObject(hdcMem, hFont);
+
+		if (pCurrentImage) 
+		{
+			Graphics graphics(hdcMem);
+			int imgW = pCurrentImage->GetWidth();
+			int imgH = pCurrentImage->GetHeight();
+			float ratio = min((float)w / imgW, (float)h / imgH);
+			int drawW = (int)(imgW * ratio);
+			int drawH = (int)(imgH * ratio);
+			int x = (w - drawW) / 2;
+			int y = (h - drawH) / 2;
+			graphics.DrawImage(pCurrentImage, x, y, drawW, drawH);
+		}
+		else 
+		{
+			SetBkMode(hdcMem, TRANSPARENT);
+			DrawText(hdcMem, L"从列表中单击选择一张图片", -1, &rcClient, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+		}
+		{
+			Graphics graphics(hdcMem);
+			Pen pen(Color(255, 59, 48, 0), 10);
+			for (size_t i = 0; i < bboxes.size(); ++i) 
+			{
+				const BBox& box = bboxes[i];
+				RECT rc = ImageToControl(box);
+				bool sel = (i == selectedIndex);
+				Color color = GetClassColor(box.classId);
+				pen.SetColor(color);
+				graphics.DrawRectangle(&pen, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
+				if (sel)
+				{
+					DrawHandles(graphics, rc);
+				}
+			}
+		}
+		BitBlt(hdc, rcClient.left, rcClient.top, w, h, hdcMem, 0, 0, SRCCOPY);
+
+		SelectObject(hdcMem, hbmOld);
+		DeleteObject(hbmMem);
+		DeleteDC(hdcMem);
+		EndPaint(hWnd, &ps);
+		return 0;
+	}
+	case WM_LBUTTONDOWN:
+	{
+		SetFocus(hWnd);
+		if (IsDlgButtonChecked(hPagePicture, IDC_NAME_1) == BST_CHECKED)
+		{
+			currentClassId = 1;
+		}
+		else if (IsDlgButtonChecked(hPagePicture, IDC_NAME_2) == BST_CHECKED)
+		{
+			currentClassId = 2;
+		}
+		else if (IsDlgButtonChecked(hPagePicture, IDC_NAME_3) == BST_CHECKED)
+		{
+			currentClassId = 3;
+		}
+		else if (IsDlgButtonChecked(hPagePicture, IDC_NAME_4) == BST_CHECKED)
+		{
+			currentClassId = 4;
+		}
+		else if (IsDlgButtonChecked(hPagePicture, IDC_NAME_5) == BST_CHECKED)
+		{
+			currentClassId = 5;
+		}
+		else if (IsDlgButtonChecked(hPagePicture, IDC_NAME_6) == BST_CHECKED)
+		{
+			currentClassId = 6;
+		}
+		POINT ptCtrl = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+		POINT ptImg = ControlToImage(ptCtrl);
+		int imgWidth = pCurrentImage->GetWidth();
+		int imgHeight = pCurrentImage->GetHeight();
+
+		int handle = HitTestHandle(hWnd, ptCtrl);
+		if (handle != -1)
+		{
+			dragMode = Resizing;
+			resizeHandle = handle;
+			if (selectedIndex != -1)
+			{
+				originalBox = bboxes[selectedIndex];
+			}
+			SetCapture(hWnd);
+			return 0;
+		}
+
+		bool found = FALSE;
+		int expand = threshold;
+		for (int i = (int)bboxes.size() - 1; i >= 0; --i)
+		{
+			const BBox& box = bboxes[i];
+			if (ptImg.x >= box.left - expand && ptImg.x <= box.right + expand &&
+				ptImg.y >= box.top - expand && ptImg.y <= box.bottom + expand)
+			{
+				selectedIndex = i;
+				found = TRUE;
+				dragMode = Moving;
+				dragOffset.x = ptImg.x - box.left;
+				dragOffset.y = ptImg.y - box.top;
+				SetCapture(hWnd);
+				InvalidateRect(hWnd, NULL, FALSE);
+				break;
+			}
+		}
+		if (found)
+		{
+			return 0;
+		}
+
+		if (ptImg.x >= 0 && ptImg.x < imgWidth && ptImg.y >= 0 && ptImg.y < imgHeight)
+		{
+			selectedIndex = -1;
+			BBox newBox;
+			newBox.left = newBox.right = ptImg.x;
+			newBox.top = newBox.bottom = ptImg.y;
+			newBox.classId = currentClassId;
+			newBox.selected = false;
+			bboxes.push_back(newBox);
+			selectedIndex = (int)bboxes.size() - 1;
+			bCreating = TRUE;
+			dragMode = Creating;
+			SetCapture(hWnd);
+			InvalidateRect(hWnd, NULL, FALSE);
+		}
+		else
+		{
+			selectedIndex = -1;
+			InvalidateRect(hWnd, NULL, FALSE);
+		}
+		return 0;
+	}
+	case WM_MOUSEMOVE:
+	{
+		if (dragMode == Moving && selectedIndex != -1)
+		{
+			POINT ptCtrl = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+			POINT ptImg = ControlToImage(ptCtrl);
+			BBox& box = bboxes[selectedIndex];
+			int width = box.right - box.left;
+			int height = box.bottom - box.top;
+			box.left = ptImg.x - dragOffset.x;
+			box.right = box.left + width;
+			box.top = ptImg.y - dragOffset.y;
+			box.bottom = box.top + height;
+			ClampRect(box, 0, 0, pCurrentImage->GetWidth(), pCurrentImage->GetHeight());
+			InvalidateRect(hWnd, NULL, FALSE);
+		}
+		else if (dragMode == Resizing && selectedIndex != -1)
+		{
+			POINT ptCtrl = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+			POINT ptImg = ControlToImage(ptCtrl);
+			BBox& box = bboxes[selectedIndex];
+			int minSize = 5;
+			switch (resizeHandle)
+			{
+			case 0: 
+				box.left = ptImg.x; 
+				box.top = ptImg.y; 
+				break;
+			case 1: 
+				box.top = ptImg.y; 
+				break;
+			case 2: 
+				box.right = ptImg.x; 
+				box.top = ptImg.y; 
+				break;
+			case 3: 
+				box.right = ptImg.x; 
+				break;
+			case 4: 
+				box.right = ptImg.x; 
+				box.bottom = ptImg.y; 
+				break;
+			case 5: 
+				box.bottom = ptImg.y; 
+				break;
+			case 6: 
+				box.left = ptImg.x; 
+				box.bottom = ptImg.y; 
+				break;
+			case 7: 
+				box.left = ptImg.x; 
+				break;
+			}
+			if (box.right - box.left < minSize) 
+			{
+				if (resizeHandle == 0 || resizeHandle == 7 || resizeHandle == 6)
+				{
+					box.left = box.right - minSize;
+				}
+				else
+				{
+					box.right = box.left + minSize;
+				}
+			}
+			if (box.bottom - box.top < minSize) 
+			{
+				if (resizeHandle == 0 || resizeHandle == 1 || resizeHandle == 2)
+				{
+					box.top = box.bottom - minSize;
+				}
+				else
+				{
+					box.bottom = box.top + minSize;
+				}
+			}
+			int imgWidth = pCurrentImage->GetWidth();
+			int imgHeight = pCurrentImage->GetHeight();
+			ClampRect(box, 0, 0, imgWidth, imgHeight);
+			InvalidateRect(hWnd, NULL, FALSE);
+		}
+		else if (dragMode == Creating && selectedIndex != -1)
+		{
+			POINT ptCtrl = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+			POINT ptImg = ControlToImage(ptCtrl);
+			BBox& box = bboxes[selectedIndex];
+			int newLeft = min(box.left, ptImg.x);
+			int newRight = max(box.left, ptImg.x);
+			int newTop = min(box.top, ptImg.y);
+			int newBottom = max(box.top, ptImg.y);
+			box.left = newLeft;
+			box.right = newRight;
+			box.top = newTop;
+			box.bottom = newBottom;
+			int minSize = 5;
+			if (box.right - box.left < minSize) 
+			{
+				if (ptImg.x < box.left)
+				{
+					box.left = box.right - minSize;
+				}
+				else
+				{
+					box.right = box.left + minSize;
+				}
+			}
+			if (box.bottom - box.top < minSize) 
+			{
+				if (ptImg.y < box.top) 
+				{ 
+					box.top = box.bottom - minSize;
+				}
+				else 
+				{ 
+					box.bottom = box.top + minSize;
+				}
+			}
+			ClampRect(box, 0, 0, pCurrentImage->GetWidth(), pCurrentImage->GetHeight());
+			InvalidateRect(hWnd, NULL, FALSE);
+		}
+		return 0;
+	}
+	case WM_LBUTTONUP:
+	{
+		if (dragMode == Creating && selectedIndex != -1)
+		{
+			BBox& box = bboxes[selectedIndex];
+			if ((box.right - box.left) < 2 || (box.bottom - box.top) < 2)
+			{
+				bboxes.erase(bboxes.begin() + selectedIndex);
+			}
+			selectedIndex = -1;
+			bCreating = FALSE;
+			dragMode = None;
+			ReleaseCapture();
+			InvalidateRect(hWnd, NULL, FALSE);
+			return 0;
+		}
+		if (dragMode != None)
+		{
+			dragMode = None;
+			ReleaseCapture();
+			InvalidateRect(hWnd, NULL, FALSE);
+		}
+		return 0;
+	}
+	case WM_KEYDOWN: 
+	{
+		if (wParam == VK_DELETE && selectedIndex != -1) 
+		{
+			bboxes.erase(bboxes.begin() + selectedIndex);
+			selectedIndex = -1;
+			InvalidateRect(hWnd, NULL, FALSE);
+		}
+		return 0;
+	}
+	}
+	return CallWindowProc(oldPicProc, hWnd, message, wParam, lParam);
+}
+
 INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	switch (message)
 	{
 	case WM_INITDIALOG:
 	{
+		hImageCtrl = CreateWindow(L"BUTTON", L"",
+			WS_CHILD | WS_VISIBLE | BS_OWNERDRAW | WS_TABSTOP,
+			0, 0, 0, 0,
+			hDlg, (HMENU)IDC_PICTURE, GetModuleHandle(NULL), NULL
+		);
 		hImageCtrl = GetDlgItem(hDlg, IDC_PICTURE);
 		DoCreateListView(hDlg);
 		PostMessage(hDlg, WM_SIZE, 0, 0);
 		SendMessage(GetDlgItem(hDlg, IDC_ENABLE_EDIT), BM_SETCHECK, BST_CHECKED, 0);
 		SendMessage(GetDlgItem(hDlg, IDC_NAME_1), BM_SETCHECK, BST_CHECKED, 0);
+		oldPicProc = (WNDPROC)SetWindowLongPtr(GetDlgItem(hDlg, IDC_PICTURE), GWLP_WNDPROC, (LONG_PTR)PicSubclassProc);
 		return 0;
 	}
 	case WM_SIZE:
@@ -306,9 +869,19 @@ INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 		switch (WM_ID)
 		{
 		case IDC_OK:
+			std::wstring txtPath = currentImagePath;
+			size_t dotPos = txtPath.find_last_of(L'.');
+			if (dotPos != std::wstring::npos) {
+				txtPath = txtPath.substr(0, dotPos) + L".txt";
+			}
+			else {
+				txtPath += L".txt";
+			}
+			SaveBBoxesToFile(hDlg, bboxes, pCurrentImage->GetWidth(), pCurrentImage->GetHeight(), txtPath);
 			SelectNextImage(GetDlgItem(hDlg, IDC_LISTVIEW));
 			return 0;
 		}
+		return 0;
 	}
 	case WM_NOTIFY:
 	{
@@ -368,42 +941,6 @@ INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 		}
 		else if (lpDIS->CtlID == IDC_PICTURE)
 		{
-			HDC hdc = lpDIS->hDC;
-			RECT rc = lpDIS->rcItem;
-
-			HBRUSH hBrush = CreateSolidBrush(RGB(255, 255, 255));
-			HFONT hFont = CreateFont(
-				40, 0, 0, 0,
-				FW_BOLD, FALSE, FALSE, FALSE,
-				DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,
-				DEFAULT_PITCH | FF_DONTCARE, L"Microsoft Yahei UI"
-			);
-			HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
-			FillRect(hdc, &rc, hBrush);
-			DeleteObject(hBrush);
-
-			if (pCurrentImage)
-			{
-				Graphics graphics(hdc);
-				int imageWidth = pCurrentImage->GetWidth();
-				int imageHeight = pCurrentImage->GetHeight();
-				if (imageHeight > 0 && imageWidth > 0)
-				{
-					float ratio = min((float)(rc.right - rc.left) / imageWidth, (float)(rc.bottom - rc.top) / imageHeight);
-					int drawWidth = (int)(imageWidth * ratio);
-					int drawHeight = (int)(imageHeight * ratio);
-					int x = rc.left + (rc.right - rc.left - drawWidth) / 2;
-					int y = rc.top + (rc.bottom - rc.top - drawHeight) / 2;
-					graphics.DrawImage(pCurrentImage, x, y, drawWidth, drawHeight);
-				}
-			}
-			else
-			{
-				SetBkMode(hdc, TRANSPARENT);
-				DrawText(hdc, L"从列表中单击选择一张图片", -1, &rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
-			}
-			SelectObject(hdc, hOldFont);
-			DeleteObject(hFont);
 			return TRUE;
 		}
 		break;
@@ -419,4 +956,3 @@ INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 	}
 	return FALSE;
 }
-
