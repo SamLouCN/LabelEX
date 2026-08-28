@@ -554,27 +554,27 @@ LRESULT CALLBACK PicSubclassProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 		SetFocus(hWnd);
 		if (IsDlgButtonChecked(hPagePicture, IDC_NAME_1) == BST_CHECKED)
 		{
-			currentClassId = 1;
+			currentClassId = 0;
 		}
 		else if (IsDlgButtonChecked(hPagePicture, IDC_NAME_2) == BST_CHECKED)
 		{
-			currentClassId = 2;
+			currentClassId = 1;
 		}
 		else if (IsDlgButtonChecked(hPagePicture, IDC_NAME_3) == BST_CHECKED)
 		{
-			currentClassId = 3;
+			currentClassId = 2;
 		}
 		else if (IsDlgButtonChecked(hPagePicture, IDC_NAME_4) == BST_CHECKED)
 		{
-			currentClassId = 4;
+			currentClassId = 3;
 		}
 		else if (IsDlgButtonChecked(hPagePicture, IDC_NAME_5) == BST_CHECKED)
 		{
-			currentClassId = 5;
+			currentClassId = 4;
 		}
 		else if (IsDlgButtonChecked(hPagePicture, IDC_NAME_6) == BST_CHECKED)
 		{
-			currentClassId = 6;
+			currentClassId = 5;
 		}
 		POINT ptCtrl = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
 		POINT ptImg = ControlToImage(ptCtrl);
