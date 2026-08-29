@@ -208,6 +208,8 @@ void StopFolderMonitor()
 	if (hExitEvent)
 	{
 		SetEvent(hExitEvent);
+		CloseHandle(hExitEvent);
+		hExitEvent = NULL;
 	}
 	if (hMonitorThread)
 	{
@@ -218,12 +220,6 @@ void StopFolderMonitor()
 		}
 		CloseHandle(hMonitorThread);
 		hMonitorThread = NULL;
-	}
-
-	if (hExitEvent)
-	{
-		CloseHandle(hExitEvent);
-		hExitEvent = NULL;
 	}
 }
 
@@ -314,7 +310,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 		case ID_VERSION:
 			MessageBox(hWnd,
-				L"LabelEX - for Yolo\n版本: 0.0.0\n(Developer)Build 00003",
+				L"LabelEX - for Yolo\n版本: 0.0.0\n(Developer)Build 00007",
 				L"关于",
 				MB_OK);
 			return 0;

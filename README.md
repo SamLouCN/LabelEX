@@ -33,6 +33,10 @@ Simplified Chinese:
 ## Project structure
 ```text
 LabelEX
+├── doc/
+│   ├── ARCHITECTURE.md # Simple explanation of architecture
+│   ├── API_DOCUMENTATION.md # API Documentation
+│   ├── USER_MANUAL # detailed User Manual
 ├── src/
 │   ├── main.cpp/h # main/program entrance
 │   ├── PagePicture.cpp # picture editing page
@@ -41,5 +45,6 @@ LabelEX
 │   ├── LabelEX.rc # resource files
 │	└── manifest.xml # enable Common Controls 6.0
 ├── CMakeLists.txt # CMake configurations
+├── CHANGELOG.md # Update and changes included
 └── README.md # readme
 ```

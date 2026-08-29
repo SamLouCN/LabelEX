@@ -20,15 +20,13 @@ HWND hImageCtrl = nullptr;
 std::vector<BBox> bboxes;
 int currentClassId = 0;
 int selectedIndex = -1;
-int threshold = 10;
-BOOL bCreating = TRUE;
+int threshold = 6;
 WNDPROC oldPicProc = NULL;
 enum DragMode {None, Moving, Resizing, Creating};
 DragMode dragMode = None;
 int resizeHandle = -1;
 POINT dragStart;
 POINT dragOffset;
-BBox originalBox;
 wchar_t szFolderPath[MAX_PATH] = { 0 };
 std::wstring currentImagePath;
 
@@ -105,10 +103,6 @@ void RefreshList(HWND hWnd)
 			continue;
 		}
 		wchar_t *pExt = PathFindExtension(fd.cFileName);
-		if (!pExt)
-		{
-			continue;
-		}
 		if (!IsImageFile(pExt))
 		{
 			continue;
@@ -526,7 +520,7 @@ LRESULT CALLBACK PicSubclassProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 		}
 		{
 			Graphics graphics(hdcMem);
-			Pen pen(Color(255, 59, 48, 0), 10);
+			Pen pen(Color(255, 59, 48, 0), threshold);
 			for (size_t i = 0; i < bboxes.size(); ++i) 
 			{
 				const BBox& box = bboxes[i];
@@ -586,10 +580,6 @@ LRESULT CALLBACK PicSubclassProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 		{
 			dragMode = Resizing;
 			resizeHandle = handle;
-			if (selectedIndex != -1)
-			{
-				originalBox = bboxes[selectedIndex];
-			}
 			SetCapture(hWnd);
 			return 0;
 		}
@@ -627,7 +617,6 @@ LRESULT CALLBACK PicSubclassProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 			newBox.selected = false;
 			bboxes.push_back(newBox);
 			selectedIndex = (int)bboxes.size() - 1;
-			bCreating = TRUE;
 			dragMode = Creating;
 			SetCapture(hWnd);
 			InvalidateRect(hWnd, NULL, FALSE);
@@ -770,7 +759,6 @@ LRESULT CALLBACK PicSubclassProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 				bboxes.erase(bboxes.begin() + selectedIndex);
 			}
 			selectedIndex = -1;
-			bCreating = FALSE;
 			dragMode = None;
 			ReleaseCapture();
 			InvalidateRect(hWnd, NULL, FALSE);
