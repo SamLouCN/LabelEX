@@ -1,5 +1,5 @@
 # LabelEX User Manual
-> Version: 0.0.0(beta) Dev 00007  
+> Version: 0.0.1(beta) Dev 00009  
 > Language: Simplified Chinese
 
 ## 目录
@@ -42,6 +42,7 @@ class_id x_center y_center width height
 - `Alt` + `O` : 选项子菜单
 - `Alt` + `A` : 关于子菜单
 - `Delete` : 删除选中的文件
+- `0` - `5` : 选择类
 
 ## 常见问题
 - Q: 如果我已经单击`确定`保存标签到txt，我继续修改并再次单击`确定`可以覆盖原有的标签文件吗

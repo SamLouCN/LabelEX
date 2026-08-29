@@ -1,5 +1,5 @@
 # ARCHITECTURE
-> Version: 0.0.0(beta) Dev 00007  
+> Version: 0.0.1(beta) Dev 00009  
 > Language: Simplified Chinese
 
 # 技术栈

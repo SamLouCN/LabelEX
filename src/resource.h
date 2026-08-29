@@ -22,6 +22,21 @@
 #define IDC_COLOR_4                     1018
 #define IDC_COLOR_5                     1019
 #define IDC_COLOR_6                     1020
+#define IDC_EDIT_1						1021
+#define IDC_EDIT_2						1022
+#define IDC_EDIT_3						1023
+#define IDC_EDIT_4						1024
+#define IDC_EDIT_5						1025
+#define IDC_EDIT_6						1026
+#define IDR_ACCELERATOR1				105
+#define IDC_SWITCH_CLASS0				1050
+#define IDC_SWITCH_CLASS1				1051
+#define IDC_SWITCH_CLASS2				1052
+#define IDC_SWITCH_CLASS3				1053
+#define IDC_SWITCH_CLASS4				1054
+#define IDC_SWITCH_CLASS5				1055
+
+
 
 // Next default values for new objects
 // 

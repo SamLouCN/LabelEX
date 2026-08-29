@@ -1,8 +1,9 @@
 .vs/
 test.cpp
 build/
-RCa*
+RC*
 *.aps
 *.res
 *.tmp
 CMakeSettings.json
+res/winres.h

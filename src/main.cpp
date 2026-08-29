@@ -285,11 +285,16 @@ int WINAPI wWinMain(
 	ShowWindow(hWnd, nCmdShow);
 	UpdateWindow(hWnd);
 
+	HACCEL hAccel = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDR_ACCELERATOR1));
+
 	MSG msg;
 	while (GetMessage(&msg, NULL, 0, 0))
 	{
-		TranslateMessage(&msg);
-		DispatchMessage(&msg);
+		if (!TranslateAccelerator(hWnd, hAccel, &msg))
+		{
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
 	}
 	GdiplusShutdown(gdiplusToken);
 	return (int)msg.wParam;
@@ -319,6 +324,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			DoSelectFolder(hPagePicture);
 			return 0;
 		}
+		default:
+			if (hPagePicture)
+				SendMessage(hPagePicture, WM_COMMAND, wParam, lParam);
+			return 0;
 		}
 		return 0;
 	}

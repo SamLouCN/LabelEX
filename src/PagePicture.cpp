@@ -572,6 +572,10 @@ LRESULT CALLBACK PicSubclassProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 		}
 		POINT ptCtrl = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
 		POINT ptImg = ControlToImage(ptCtrl);
+		if (!pCurrentImage)
+		{
+			return 0;
+		}
 		int imgWidth = pCurrentImage->GetWidth();
 		int imgHeight = pCurrentImage->GetHeight();
 
@@ -779,8 +783,9 @@ LRESULT CALLBACK PicSubclassProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 			bboxes.erase(bboxes.begin() + selectedIndex);
 			selectedIndex = -1;
 			InvalidateRect(hWnd, NULL, FALSE);
+			return TRUE;
 		}
-		return 0;
+		return FALSE;
 	}
 	}
 	return CallWindowProc(oldPicProc, hWnd, message, wParam, lParam);
@@ -857,17 +862,43 @@ INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 		switch (WM_ID)
 		{
 		case IDC_OK:
+		{
+			if (!pCurrentImage)
+			{
+				return 0;
+			}
 			std::wstring txtPath = currentImagePath;
 			size_t dotPos = txtPath.find_last_of(L'.');
-			if (dotPos != std::wstring::npos) {
+			if (dotPos != std::wstring::npos)
+			{
 				txtPath = txtPath.substr(0, dotPos) + L".txt";
 			}
-			else {
+			else
+			{
 				txtPath += L".txt";
 			}
 			SaveBBoxesToFile(hDlg, bboxes, pCurrentImage->GetWidth(), pCurrentImage->GetHeight(), txtPath);
 			SelectNextImage(GetDlgItem(hDlg, IDC_LISTVIEW));
 			return 0;
+		}
+		case IDC_SWITCH_CLASS0:
+			CheckRadioButton(hDlg, IDC_NAME_1, IDC_NAME_6, IDC_NAME_1);
+			return TRUE;
+		case IDC_SWITCH_CLASS1:
+			CheckRadioButton(hDlg, IDC_NAME_1, IDC_NAME_6, IDC_NAME_2);
+			return TRUE;
+		case IDC_SWITCH_CLASS2:
+			CheckRadioButton(hDlg, IDC_NAME_1, IDC_NAME_6, IDC_NAME_3);
+			return TRUE;
+		case IDC_SWITCH_CLASS3:
+			CheckRadioButton(hDlg, IDC_NAME_1, IDC_NAME_6, IDC_NAME_4);
+			return TRUE;
+		case IDC_SWITCH_CLASS4:
+			CheckRadioButton(hDlg, IDC_NAME_1, IDC_NAME_6, IDC_NAME_5);
+			return TRUE;
+		case IDC_SWITCH_CLASS5:
+			CheckRadioButton(hDlg, IDC_NAME_1, IDC_NAME_6, IDC_NAME_6);
+			return TRUE;
 		}
 		return 0;
 	}
