@@ -1,4 +1,3 @@
-*.vcxproj.user
 .vs/
 test.cpp
 build/
@@ -6,3 +5,4 @@ RCa*
 *.aps
 *.res
 *.tmp
+CMakeSettings.json
