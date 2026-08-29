@@ -468,12 +468,12 @@ void LoadBBoxesFromFile(const std::wstring& filePath, int imgWidth, int imgHeigh
 Color GetClassColor(int classId)
 {
 	switch (classId) {
-	case 0: return Color(255, 59, 48);
-	case 1: return Color(255, 149, 0);
-	case 2: return Color(255, 204, 0);
-	case 3: return Color(52, 199, 89);
-	case 4: return Color(0, 122, 255);
-	case 5: return Color(175, 82, 222);
+	case 1: return Color(255, 59, 48);
+	case 2: return Color(255, 149, 0);
+	case 3: return Color(255, 204, 0);
+	case 4: return Color(52, 199, 89);
+	case 5: return Color(0, 122, 255);
+	case 6: return Color(175, 82, 222);
 	default: return Color(255, 0, 0);
 	}
 }
