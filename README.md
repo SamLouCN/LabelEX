@@ -3,11 +3,19 @@ There are many model labeling tools available today, but they either fail comple
 It's time to switch to **LabelEX** – a labeling tool written entirely with the Win32 API.
 ## Quick start guide
 Simplified Chinese:  
-打开`LabelEX.exe`，界面如下所示  
-![初始界面](img/1.png)  
+打开`LabelEX.exe`，界面如下所示 
+
+<p align="center">
+  <img src="img/1.png" alt="LabelEX 界面" width="500" />
+</p>
+
 左上角单击文件菜单，单击打开文件夹，在其中选择你的图片集所在的文件夹（子文件夹将会被忽略！）  
 打开后，界面如下所示  
-![图片编辑](img/2.png)  
+
+<p align="center">
+  <img src="img/2.png" alt="图片编辑" width="500" />
+</p>
+
 光标移动到图片部分即可开始编辑，在此你可以：  
 - 在下方选择类别标签  
 - 在上方绘制矩形框，注意使得矩形框内侧紧贴需要标注的物体边缘，矩形框本身并不计入  
@@ -27,7 +35,7 @@ LabelEX
 ├── src/
 │   ├── main.cpp/h # main/program entrance
 │   ├── PagePicture.cpp # picture editing page
-│	└── resource.h $ resource ID
+│	└── resource.h # resource ID
 ├── res/
 │   ├── LabelEX.rc # resource files
 │	└── manifest.xml # enable Common Controls 6.0
