@@ -35,6 +35,7 @@
 #define IDC_SWITCH_CLASS3				1053
 #define IDC_SWITCH_CLASS4				1054
 #define IDC_SWITCH_CLASS5				1055
+#define IDI_MAIN_ICON					100
 
 
 
