@@ -1,5 +1,5 @@
 # LabelEX API Documentation
-> Version: 0.0.1(beta) Dev 00009  
+> Version: 0.0.2(beta) Dev 00011  
 > Language: Simplified Chinese
 
 ## Content
@@ -30,7 +30,6 @@
 struct BBox {
 	int left, top, right, bottom;	//The basic specs of your drawn rectangle
 	int classId;					//The Class ID of the circled object
-	bool selected;					//Whether this rectangle is selected (by LBUTTON_DOWN)
 };
 ```
 

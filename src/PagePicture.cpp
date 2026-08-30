@@ -12,7 +12,6 @@ using namespace Gdiplus;
 struct BBox {
 	int left, top, right, bottom;
 	int classId;
-	bool selected;
 };
 
 Bitmap* pCurrentImage = nullptr;
@@ -443,7 +442,6 @@ void LoadBBoxesFromFile(const std::wstring& filePath, int imgWidth, int imgHeigh
 	{
 		BBox box;
 		box.classId = classId;
-		box.selected = false;
 		box.left = (int)((xc - wn / 2.0f) * imgWidth);
 		box.top = (int)((yc - hn / 2.0f) * imgHeight);
 		box.right = (int)((xc + wn / 2.0f) * imgWidth);
@@ -618,7 +616,6 @@ LRESULT CALLBACK PicSubclassProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 			newBox.left = newBox.right = ptImg.x;
 			newBox.top = newBox.bottom = ptImg.y;
 			newBox.classId = currentClassId;
-			newBox.selected = false;
 			bboxes.push_back(newBox);
 			selectedIndex = (int)bboxes.size() - 1;
 			dragMode = Creating;
@@ -641,11 +638,28 @@ LRESULT CALLBACK PicSubclassProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 			BBox& box = bboxes[selectedIndex];
 			int width = box.right - box.left;
 			int height = box.bottom - box.top;
-			box.left = ptImg.x - dragOffset.x;
-			box.right = box.left + width;
-			box.top = ptImg.y - dragOffset.y;
-			box.bottom = box.top + height;
-			ClampRect(box, 0, 0, pCurrentImage->GetWidth(), pCurrentImage->GetHeight());
+			int newLeft = ptImg.x - dragOffset.x;
+			int newTop = ptImg.y - dragOffset.y;
+			if (newLeft < 0)
+			{
+				newLeft = 0;
+			}
+			if (newTop < 0)
+			{
+				newTop = 0;
+			}
+			if (newLeft + width >= pCurrentImage->GetWidth())
+			{
+				newLeft = pCurrentImage->GetWidth() - width;
+			}
+			if (newTop + height >= pCurrentImage->GetHeight())
+			{
+				newTop = pCurrentImage->GetHeight() - height;
+			}
+			box.left = newLeft;
+			box.right = newLeft + width;
+			box.top = newTop;
+			box.bottom = newTop + height;
 			InvalidateRect(hWnd, NULL, FALSE);
 		}
 		else if (dragMode == Resizing && selectedIndex != -1)
@@ -653,7 +667,7 @@ LRESULT CALLBACK PicSubclassProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 			POINT ptCtrl = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
 			POINT ptImg = ControlToImage(ptCtrl);
 			BBox& box = bboxes[selectedIndex];
-			int minSize = 5;
+			int minSize = int(min(pCurrentImage->GetHeight(), pCurrentImage->GetWidth()) / 30);
 			switch (resizeHandle)
 			{
 			case 0: 
@@ -717,36 +731,17 @@ LRESULT CALLBACK PicSubclassProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 			POINT ptCtrl = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
 			POINT ptImg = ControlToImage(ptCtrl);
 			BBox& box = bboxes[selectedIndex];
-			int newLeft = min(box.left, ptImg.x);
-			int newRight = max(box.left, ptImg.x);
-			int newTop = min(box.top, ptImg.y);
-			int newBottom = max(box.top, ptImg.y);
-			box.left = newLeft;
-			box.right = newRight;
-			box.top = newTop;
-			box.bottom = newBottom;
-			int minSize = 5;
-			if (box.right - box.left < minSize) 
+			box.right = ptImg.x;
+			box.bottom = ptImg.y;
+			
+			int minSize = int(min(pCurrentImage->GetHeight(), pCurrentImage->GetWidth()) / 30);
+			if (box.right - box.left < minSize)
 			{
-				if (ptImg.x < box.left)
-				{
-					box.left = box.right - minSize;
-				}
-				else
-				{
-					box.right = box.left + minSize;
-				}
+				box.right = box.left + minSize;
 			}
-			if (box.bottom - box.top < minSize) 
+			if (box.bottom - box.top < minSize)
 			{
-				if (ptImg.y < box.top) 
-				{ 
-					box.top = box.bottom - minSize;
-				}
-				else 
-				{ 
-					box.bottom = box.top + minSize;
-				}
+				box.bottom = box.top + minSize;
 			}
 			ClampRect(box, 0, 0, pCurrentImage->GetWidth(), pCurrentImage->GetHeight());
 			InvalidateRect(hWnd, NULL, FALSE);
