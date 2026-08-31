@@ -316,7 +316,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 		case ID_VERSION:
 			MessageBox(hWnd,
-				L"LabelEX - for Yolo\n版本: 0.0.0\n(Developer)Build 00007",
+				L"LabelEX - for Yolo\n版本: 0.0.3\n(Developer)Build 00012",
 				L"关于",
 				MB_OK);
 			return 0;
@@ -346,8 +346,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	{
 		MINMAXINFO* pInfo = (MINMAXINFO*)lParam;
 		UINT dpi = GetDpiForWindow(hWnd);
-		int minWidth = MulDiv(980, dpi, 96);
-		int minHeight = MulDiv(600, dpi, 96);
+		int minWidth = MulDiv(1260, dpi, 96);
+		int minHeight = MulDiv(800, dpi, 96);
 		pInfo->ptMinTrackSize.x = minWidth;
 		pInfo->ptMinTrackSize.y = minHeight;
 		return 0;

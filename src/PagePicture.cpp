@@ -190,7 +190,7 @@ BOOL DoCreateListView(HWND hWnd)
 	ListView_InsertColumn(hList, 0 ,&col);
 
 	col.pszText = (LPWSTR)L"文件名";
-	col.cx = IDCForDpi(hList, 230);
+	col.cx = IDCForDpi(hList, 170);
 	ListView_InsertColumn(hList, 1, &col);
 
 	return TRUE;
@@ -464,8 +464,12 @@ Color GetClassColor(int classId)
 	case 1: return Color(255, 149, 0);
 	case 2: return Color(255, 204, 0);
 	case 3: return Color(52, 199, 89);
-	case 4: return Color(0, 122, 255);
-	case 5: return Color(175, 82, 222);
+	case 4: return Color(0, 200, 179);
+	case 5: return Color(0, 122, 255);
+	case 6: return Color(97, 85, 245);
+	case 7: return Color(169, 83, 247);
+	case 8: return Color(231, 55, 255);
+	case 9: return Color(255, 163, 231);
 	default: return Color(255, 0, 0);
 	}
 }
@@ -567,6 +571,22 @@ LRESULT CALLBACK PicSubclassProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 		else if (IsDlgButtonChecked(hPagePicture, IDC_NAME_6) == BST_CHECKED)
 		{
 			currentClassId = 5;
+		}
+		else if (IsDlgButtonChecked(hPagePicture, IDC_NAME_7) == BST_CHECKED)
+		{
+			currentClassId = 6;
+		}
+		else if (IsDlgButtonChecked(hPagePicture, IDC_NAME_8) == BST_CHECKED)
+		{
+			currentClassId = 7;
+		}
+		else if (IsDlgButtonChecked(hPagePicture, IDC_NAME_9) == BST_CHECKED)
+		{
+			currentClassId = 8;
+		}
+		else if (IsDlgButtonChecked(hPagePicture, IDC_NAME_10) == BST_CHECKED)
+		{
+			currentClassId = 9;
 		}
 		POINT ptCtrl = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
 		POINT ptImg = ControlToImage(ptCtrl);
@@ -800,7 +820,31 @@ INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 		hImageCtrl = GetDlgItem(hDlg, IDC_PICTURE);
 		DoCreateListView(hDlg);
 		PostMessage(hDlg, WM_SIZE, 0, 0);
-		SendMessage(GetDlgItem(hDlg, IDC_ENABLE_EDIT), BM_SETCHECK, BST_CHECKED, 0);
+		SendMessage(GetDlgItem(hDlg, IDC_NUMBER), CB_ADDSTRING, 0, (LPARAM)L"1");
+		SendMessage(GetDlgItem(hDlg, IDC_NUMBER), CB_ADDSTRING, 0, (LPARAM)L"2");
+		SendMessage(GetDlgItem(hDlg, IDC_NUMBER), CB_ADDSTRING, 0, (LPARAM)L"3");
+		SendMessage(GetDlgItem(hDlg, IDC_NUMBER), CB_ADDSTRING, 0, (LPARAM)L"4");
+		SendMessage(GetDlgItem(hDlg, IDC_NUMBER), CB_ADDSTRING, 0, (LPARAM)L"5");
+		SendMessage(GetDlgItem(hDlg, IDC_NUMBER), CB_ADDSTRING, 0, (LPARAM)L"6");
+		SendMessage(GetDlgItem(hDlg, IDC_NUMBER), CB_ADDSTRING, 0, (LPARAM)L"7");
+		SendMessage(GetDlgItem(hDlg, IDC_NUMBER), CB_ADDSTRING, 0, (LPARAM)L"8");
+		SendMessage(GetDlgItem(hDlg, IDC_NUMBER), CB_ADDSTRING, 0, (LPARAM)L"9");
+		SendMessage(GetDlgItem(hDlg, IDC_NUMBER), CB_ADDSTRING, 0, (LPARAM)L"10");
+		SendMessage(GetDlgItem(hDlg, IDC_NUMBER), CB_SETCURSEL, 5 ,0);
+
+		ShowWindow(GetDlgItem(hDlg, IDC_NAME_7), SW_HIDE);
+		ShowWindow(GetDlgItem(hDlg, IDC_NAMEEDIT_7), SW_HIDE);
+		ShowWindow(GetDlgItem(hDlg, IDC_COLOR_7), SW_HIDE);
+		ShowWindow(GetDlgItem(hDlg, IDC_NAME_8), SW_HIDE);
+		ShowWindow(GetDlgItem(hDlg, IDC_NAMEEDIT_8), SW_HIDE);
+		ShowWindow(GetDlgItem(hDlg, IDC_COLOR_8), SW_HIDE);
+		ShowWindow(GetDlgItem(hDlg, IDC_NAME_9), SW_HIDE);
+		ShowWindow(GetDlgItem(hDlg, IDC_NAMEEDIT_9), SW_HIDE);
+		ShowWindow(GetDlgItem(hDlg, IDC_COLOR_9), SW_HIDE);
+		ShowWindow(GetDlgItem(hDlg, IDC_NAME_10), SW_HIDE);
+		ShowWindow(GetDlgItem(hDlg, IDC_NAMEEDIT_10), SW_HIDE);
+		ShowWindow(GetDlgItem(hDlg, IDC_COLOR_10), SW_HIDE);
+
 		SendMessage(GetDlgItem(hDlg, IDC_NAME_1), BM_SETCHECK, BST_CHECKED, 0);
 		oldPicProc = (WNDPROC)SetWindowLongPtr(GetDlgItem(hDlg, IDC_PICTURE), GWLP_WNDPROC, (LONG_PTR)PicSubclassProc);
 		return 0;
@@ -811,30 +855,52 @@ INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 		GetClientRect(hDlg, &rcDlg);
 		UINT margin = IDCForDpi(hDlg, 10);
 		UINT minLen = IDCForDpi(hDlg, 1);
-		UINT listViewWidth = IDCForDpi(hDlg, 280);
+		UINT listViewWidth = IDCForDpi(hDlg, 220);
+		UINT nameWidth = 9 * margin;
+		UINT nameWidthWithMargin = nameWidth + margin;
 
 		UINT workSpaceLeft = margin * 2 + listViewWidth;
-		UINT workSpaceTop = rcDlg.bottom - rcDlg.top - 16 * margin;
+		UINT workSpaceTop = rcDlg.bottom - rcDlg.top - 17 * margin;
 		UINT wsSecondRowTop = workSpaceTop + 4 * margin;
-		UINT wsThirdRowTop = workSpaceTop + 8 * margin;
-		UINT wsFourthRowTop = workSpaceTop + 12 * margin;
+		UINT wsThirdRowTop = workSpaceTop + 7 * margin;
+		UINT wsFourthRowTop = workSpaceTop + 10 * margin;
+		UINT wsFifthRowTop = workSpaceTop + 13 * margin;
 
 		SetWindowPos(GetDlgItem(hDlg, IDC_LISTVIEW), NULL, margin, margin, listViewWidth, rcDlg.bottom - rcDlg.top - 2 * margin, SWP_NOZORDER);
-		SetWindowPos(GetDlgItem(hDlg, IDC_PICTURE), NULL, workSpaceLeft, margin, rcDlg.right - rcDlg.left - 3 * margin - listViewWidth, rcDlg.bottom - rcDlg.top - 18 * margin, SWP_NOZORDER);
-		SetWindowPos(GetDlgItem(hDlg, IDC_OK), NULL, rcDlg.right - rcDlg.left - 12 * margin, wsFourthRowTop, 11 * margin, 3 * margin, SWP_NOZORDER);
-		SetWindowPos(GetDlgItem(hDlg, IDC_ENABLE_EDIT), NULL, workSpaceLeft, workSpaceTop + margin, 10 * margin, 3 * margin, SWP_NOZORDER);
-		SetWindowPos(GetDlgItem(hDlg, IDC_NAME_1), NULL, workSpaceLeft + minLen, wsSecondRowTop, 10 * margin, 3 * margin, SWP_NOZORDER);
-		SetWindowPos(GetDlgItem(hDlg, IDC_NAME_2), NULL, workSpaceLeft + minLen + 11 * margin, wsSecondRowTop, 10 * margin, 3 * margin, SWP_NOZORDER);
-		SetWindowPos(GetDlgItem(hDlg, IDC_NAME_3), NULL, workSpaceLeft + minLen + 22 * margin, wsSecondRowTop, 10 * margin, 3 * margin, SWP_NOZORDER);
-		SetWindowPos(GetDlgItem(hDlg, IDC_NAME_4), NULL, workSpaceLeft + minLen + 33 * margin, wsSecondRowTop, 10 * margin, 3 * margin, SWP_NOZORDER);
-		SetWindowPos(GetDlgItem(hDlg, IDC_NAME_5), NULL, workSpaceLeft + minLen + 44 * margin, wsSecondRowTop, 10 * margin, 3 * margin, SWP_NOZORDER);
-		SetWindowPos(GetDlgItem(hDlg, IDC_NAME_6), NULL, workSpaceLeft + minLen + 55 * margin, wsSecondRowTop, 10 * margin, 3 * margin, SWP_NOZORDER);
-		SetWindowPos(GetDlgItem(hDlg, IDC_COLOR_1), NULL, workSpaceLeft + minLen, wsThirdRowTop, 10 * margin, 2 * margin, SWP_NOZORDER);
-		SetWindowPos(GetDlgItem(hDlg, IDC_COLOR_2), NULL, workSpaceLeft + minLen + 11 * margin, wsThirdRowTop, 10 * margin, 2 * margin, SWP_NOZORDER);
-		SetWindowPos(GetDlgItem(hDlg, IDC_COLOR_3), NULL, workSpaceLeft + minLen + 22 * margin, wsThirdRowTop, 10 * margin, 2 * margin, SWP_NOZORDER);
-		SetWindowPos(GetDlgItem(hDlg, IDC_COLOR_4), NULL, workSpaceLeft + minLen + 33 * margin, wsThirdRowTop, 10 * margin, 2 * margin, SWP_NOZORDER);
-		SetWindowPos(GetDlgItem(hDlg, IDC_COLOR_5), NULL, workSpaceLeft + minLen + 44 * margin, wsThirdRowTop, 10 * margin, 2 * margin, SWP_NOZORDER);
-		SetWindowPos(GetDlgItem(hDlg, IDC_COLOR_6), NULL, workSpaceLeft + minLen + 55 * margin, wsThirdRowTop, 10 * margin, 2 * margin, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_PICTURE), NULL, workSpaceLeft, margin, rcDlg.right - rcDlg.left - 3 * margin - listViewWidth, rcDlg.bottom - rcDlg.top - 19 * margin, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_OK), NULL, rcDlg.right - rcDlg.left - 12 * margin, wsFifthRowTop, 11 * margin, 3 * margin, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_ST_NUMBER), NULL, workSpaceLeft, workSpaceTop + margin, 8 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_NUMBER), NULL, workSpaceLeft + 9 * margin, workSpaceTop + margin - minLen, 4 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_NAME_1), NULL, workSpaceLeft + minLen, wsSecondRowTop, nameWidth, 3 * margin, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_NAME_2), NULL, workSpaceLeft + minLen + nameWidthWithMargin, wsSecondRowTop, nameWidth, 3 * margin, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_NAME_3), NULL, workSpaceLeft + minLen + 2 * nameWidthWithMargin, wsSecondRowTop, nameWidth, 3 * margin, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_NAME_4), NULL, workSpaceLeft + minLen + 3 * nameWidthWithMargin, wsSecondRowTop, nameWidth, 3 * margin, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_NAME_5), NULL, workSpaceLeft + minLen + 4 * nameWidthWithMargin, wsSecondRowTop, nameWidth, 3 * margin, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_NAME_6), NULL, workSpaceLeft + minLen + 5 * nameWidthWithMargin, wsSecondRowTop, nameWidth, 3 * margin, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_NAME_7), NULL, workSpaceLeft + minLen + 6 * nameWidthWithMargin, wsSecondRowTop, nameWidth, 3 * margin, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_NAME_8), NULL, workSpaceLeft + minLen + 7 * nameWidthWithMargin, wsSecondRowTop, nameWidth, 3 * margin, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_NAME_9), NULL, workSpaceLeft + minLen + 8 * nameWidthWithMargin, wsSecondRowTop, nameWidth, 3 * margin, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_NAME_10), NULL, workSpaceLeft + minLen + 9 * nameWidthWithMargin, wsSecondRowTop, nameWidth, 3 * margin, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_NAMEEDIT_1), NULL, workSpaceLeft + minLen, wsThirdRowTop, nameWidth, 2 * margin + 3 * minLen, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_NAMEEDIT_2), NULL, workSpaceLeft + minLen + nameWidthWithMargin, wsThirdRowTop, nameWidth, 2 * margin + 3 * minLen, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_NAMEEDIT_3), NULL, workSpaceLeft + minLen + 2 * nameWidthWithMargin, wsThirdRowTop, nameWidth, 2 * margin + 3 * minLen, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_NAMEEDIT_4), NULL, workSpaceLeft + minLen + 3 * nameWidthWithMargin, wsThirdRowTop, nameWidth, 2 * margin + 3 * minLen, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_NAMEEDIT_5), NULL, workSpaceLeft + minLen + 4 * nameWidthWithMargin, wsThirdRowTop, nameWidth, 2 * margin + 3 * minLen, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_NAMEEDIT_6), NULL, workSpaceLeft + minLen + 5 * nameWidthWithMargin, wsThirdRowTop, nameWidth, 2 * margin + 3 * minLen, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_NAMEEDIT_7), NULL, workSpaceLeft + minLen + 6 * nameWidthWithMargin, wsThirdRowTop, nameWidth, 2 * margin + 3 * minLen, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_NAMEEDIT_8), NULL, workSpaceLeft + minLen + 7 * nameWidthWithMargin, wsThirdRowTop, nameWidth, 2 * margin + 3 * minLen, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_NAMEEDIT_9), NULL, workSpaceLeft + minLen + 8 * nameWidthWithMargin, wsThirdRowTop, nameWidth, 2 * margin + 3 * minLen, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_NAMEEDIT_10), NULL, workSpaceLeft + minLen + 9 * nameWidthWithMargin, wsThirdRowTop, nameWidth, 2 * margin + 3 * minLen, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_COLOR_1), NULL, workSpaceLeft + minLen, wsFourthRowTop, nameWidth, 2 * margin, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_COLOR_2), NULL, workSpaceLeft + minLen + nameWidthWithMargin, wsFourthRowTop, nameWidth, 2 * margin, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_COLOR_3), NULL, workSpaceLeft + minLen + 2 * nameWidthWithMargin, wsFourthRowTop, nameWidth, 2 * margin, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_COLOR_4), NULL, workSpaceLeft + minLen + 3 * nameWidthWithMargin, wsFourthRowTop, nameWidth, 2 * margin, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_COLOR_5), NULL, workSpaceLeft + minLen + 4 * nameWidthWithMargin, wsFourthRowTop, nameWidth, 2 * margin, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_COLOR_6), NULL, workSpaceLeft + minLen + 5 * nameWidthWithMargin, wsFourthRowTop, nameWidth, 2 * margin, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_COLOR_7), NULL, workSpaceLeft + minLen + 6 * nameWidthWithMargin, wsFourthRowTop, nameWidth, 2 * margin, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_COLOR_8), NULL, workSpaceLeft + minLen + 7 * nameWidthWithMargin, wsFourthRowTop, nameWidth, 2 * margin, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_COLOR_9), NULL, workSpaceLeft + minLen + 8 * nameWidthWithMargin, wsFourthRowTop, nameWidth, 2 * margin, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_COLOR_10), NULL, workSpaceLeft + minLen + 9 * nameWidthWithMargin, wsFourthRowTop, nameWidth, 2 * margin, SWP_NOZORDER);
 
 		return 0;
 	}
@@ -854,6 +920,7 @@ INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 	case WM_COMMAND:
 	{
 		int WM_ID = LOWORD(wParam);
+		int WM_CODE = HIWORD(wParam);
 		switch (WM_ID)
 		{
 		case IDC_OK:
@@ -880,20 +947,91 @@ INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 			CheckRadioButton(hDlg, IDC_NAME_1, IDC_NAME_6, IDC_NAME_1);
 			return TRUE;
 		case IDC_SWITCH_CLASS1:
-			CheckRadioButton(hDlg, IDC_NAME_1, IDC_NAME_6, IDC_NAME_2);
+			if (IsWindowVisible(GetDlgItem(hDlg, IDC_NAME_2)))
+			{
+				CheckRadioButton(hDlg, IDC_NAME_1, IDC_NAME_10, IDC_NAME_2);
+			}
 			return TRUE;
 		case IDC_SWITCH_CLASS2:
-			CheckRadioButton(hDlg, IDC_NAME_1, IDC_NAME_6, IDC_NAME_3);
+			if (IsWindowVisible(GetDlgItem(hDlg, IDC_NAME_3)))
+			{
+				CheckRadioButton(hDlg, IDC_NAME_1, IDC_NAME_10, IDC_NAME_3);
+			}
 			return TRUE;
 		case IDC_SWITCH_CLASS3:
-			CheckRadioButton(hDlg, IDC_NAME_1, IDC_NAME_6, IDC_NAME_4);
+			if (IsWindowVisible(GetDlgItem(hDlg, IDC_NAME_4)))
+			{
+				CheckRadioButton(hDlg, IDC_NAME_1, IDC_NAME_10, IDC_NAME_4);
+			}
 			return TRUE;
 		case IDC_SWITCH_CLASS4:
-			CheckRadioButton(hDlg, IDC_NAME_1, IDC_NAME_6, IDC_NAME_5);
+			if (IsWindowVisible(GetDlgItem(hDlg, IDC_NAME_5)))
+			{
+				CheckRadioButton(hDlg, IDC_NAME_1, IDC_NAME_10, IDC_NAME_5);
+			}
 			return TRUE;
 		case IDC_SWITCH_CLASS5:
-			CheckRadioButton(hDlg, IDC_NAME_1, IDC_NAME_6, IDC_NAME_6);
+			if (IsWindowVisible(GetDlgItem(hDlg, IDC_NAME_6)))
+			{
+				CheckRadioButton(hDlg, IDC_NAME_1, IDC_NAME_10, IDC_NAME_6);
+			}
 			return TRUE;
+		case IDC_SWITCH_CLASS6:
+			if (IsWindowVisible(GetDlgItem(hDlg, IDC_NAME_7)))
+			{
+				CheckRadioButton(hDlg, IDC_NAME_1, IDC_NAME_10, IDC_NAME_7);
+			}
+			return TRUE;
+		case IDC_SWITCH_CLASS7:
+			if (IsWindowVisible(GetDlgItem(hDlg, IDC_NAME_8)))
+			{
+				CheckRadioButton(hDlg, IDC_NAME_1, IDC_NAME_10, IDC_NAME_8);
+			}
+			return TRUE;
+		case IDC_SWITCH_CLASS8:
+			if (IsWindowVisible(GetDlgItem(hDlg, IDC_NAME_9)))
+			{
+				CheckRadioButton(hDlg, IDC_NAME_1, IDC_NAME_10, IDC_NAME_9);
+			}
+			return TRUE;
+		case IDC_SWITCH_CLASS9:
+			if (IsWindowVisible(GetDlgItem(hDlg, IDC_NAME_10)))
+			{
+				CheckRadioButton(hDlg, IDC_NAME_1, IDC_NAME_10, IDC_NAME_10);
+			}
+			return TRUE;
+		case IDC_NUMBER:
+		{
+			int selIndex = (int)SendMessage(GetDlgItem(hDlg, IDC_NUMBER), CB_GETCURSEL, 0, 0);
+			if (selIndex != CB_ERR)
+			{
+				for (int i = selIndex + 1; i < 10; ++i)
+				{
+					ShowWindow(GetDlgItem(hDlg, IDC_NAME_1 + i), SW_HIDE);
+				}
+				for (int i = selIndex + 1; i < 10; ++i)
+				{
+					ShowWindow(GetDlgItem(hDlg, IDC_NAMEEDIT_1 + i), SW_HIDE);
+				}
+				for (int i = selIndex + 1; i < 10; ++i)
+				{
+					ShowWindow(GetDlgItem(hDlg, IDC_COLOR_1 + i), SW_HIDE);
+				}
+				for (int i = 0; i < selIndex + 1; ++i)
+				{
+					ShowWindow(GetDlgItem(hDlg, IDC_NAME_1 + i), SW_SHOW);
+				}
+				for (int i = 0; i < selIndex + 1; ++i)
+				{
+					ShowWindow(GetDlgItem(hDlg, IDC_NAMEEDIT_1 + i), SW_SHOW);
+				}
+				for (int i = 0; i < selIndex + 1; ++i)
+				{
+					ShowWindow(GetDlgItem(hDlg, IDC_COLOR_1 + i), SW_SHOW);
+				}
+			}
+			return TRUE;
+		}
 		}
 		return 0;
 	}
@@ -942,13 +1080,37 @@ INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 			return TRUE;
 		}
 		else if (lpDIS->CtlID == IDC_COLOR_5) {
-			HBRUSH hBrush = CreateSolidBrush(RGB(0, 122, 255));
+			HBRUSH hBrush = CreateSolidBrush(RGB(0, 200, 179));
 			FillRect(lpDIS->hDC, &lpDIS->rcItem, hBrush);
 			DeleteObject(hBrush);
 			return TRUE;
 		}
 		else if (lpDIS->CtlID == IDC_COLOR_6) {
-			HBRUSH hBrush = CreateSolidBrush(RGB(175, 82, 222));
+			HBRUSH hBrush = CreateSolidBrush(RGB(0, 122, 255));
+			FillRect(lpDIS->hDC, &lpDIS->rcItem, hBrush);
+			DeleteObject(hBrush);
+			return TRUE;
+		}
+		else if (lpDIS->CtlID == IDC_COLOR_7) {
+			HBRUSH hBrush = CreateSolidBrush(RGB(97, 85, 245));
+			FillRect(lpDIS->hDC, &lpDIS->rcItem, hBrush);
+			DeleteObject(hBrush);
+			return TRUE;
+		}
+		else if (lpDIS->CtlID == IDC_COLOR_8) {
+			HBRUSH hBrush = CreateSolidBrush(RGB(169, 83, 247));
+			FillRect(lpDIS->hDC, &lpDIS->rcItem, hBrush);
+			DeleteObject(hBrush);
+			return TRUE;
+		}
+		else if (lpDIS->CtlID == IDC_COLOR_9) {
+			HBRUSH hBrush = CreateSolidBrush(RGB(231, 55, 255));
+			FillRect(lpDIS->hDC, &lpDIS->rcItem, hBrush);
+			DeleteObject(hBrush);
+			return TRUE;
+		}
+		else if (lpDIS->CtlID == IDC_COLOR_10) {
+			HBRUSH hBrush = CreateSolidBrush(RGB(255, 163, 231));
 			FillRect(lpDIS->hDC, &lpDIS->rcItem, hBrush);
 			DeleteObject(hBrush);
 			return TRUE;
