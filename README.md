@@ -1,4 +1,4 @@
-# LabelEX - For EASY model labelling!
+# LabelEX - For EASY model labeling!
 There are many model labeling tools available today, but they either fail completely after changing environments, or are painfully difficult to use and plagued by frequent crashes.  
 It's time to switch to **LabelEX** – a labeling tool written entirely with the Win32 API.
 ## Quick start guide
@@ -46,6 +46,5 @@ LabelEX
 │   ├── LabelEX.rc # resource files
 │	└── manifest.xml # enable Common Controls 6.0
 ├── CMakeLists.txt # CMake configurations
-├── CHANGELOG.md # Update and changes included
 └── README.md # readme
 ```
