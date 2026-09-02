@@ -11,6 +11,8 @@
 #include "resource.h"
 
 INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
+INT_PTR CALLBACK DlgProc_About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
+INT_PTR CALLBACK DlgProc_Mit(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
 void RefreshList(HWND hWnd);
 void DoSelectFolder(HWND hWnd);
 void StopFolderMonitor();

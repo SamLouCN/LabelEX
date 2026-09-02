@@ -37,9 +37,10 @@ LabelEX
 ├── doc/
 │   ├── ARCHITECTURE.md # Simple explanation of architecture
 │   ├── API_DOCUMENTATION.md # API Documentation
-│   ├── USER_MANUAL # detailed User Manual
+│   └── USER_MANUAL # detailed User Manual
 ├── src/
 │   ├── main.cpp/h # main/program entrance
+│   ├── PageAbout.cpp # about and license page
 │   ├── PagePicture.cpp # picture editing page
 │	└── resource.h # resource ID
 ├── res/

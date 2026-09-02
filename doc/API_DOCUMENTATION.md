@@ -1,5 +1,5 @@
 # LabelEX API Documentation
-> Version: 0.0.3(beta) Dev 00012  
+> Version: 0.0.4(beta) Dev 00013  
 > Language: Simplified Chinese
 
 ## Content

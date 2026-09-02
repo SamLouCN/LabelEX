@@ -10,6 +10,7 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #define ID_CONVERT_VIDEO 1003
 #define ID_EXPORT_CONFIG 2001
 #define ID_VERSION 3001
+#define ID_MIT 3002
 #define WM_USER_REFRESH_LIST (WM_USER + 100)
 #define WM_USER_UPDATE_ITEM (WM_USER + 101)
 
@@ -22,10 +23,10 @@ static wchar_t szTitle[] = L"LabelEX";
 HINSTANCE hInst;
 HANDLE hExitEvent = NULL;
 HANDLE hMonitorThread = NULL;
-HWND hPagePicture;
+HWND hPagePicture, hPageAbout, hPageMit;
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-BOOL DoCreateDialog(HWND hWnd, HWND* hPagePicture);
+BOOL DoCreateDialog(HWND hWnd, HWND* hPagePicture, HWND* hPageAbout, HWND* hPageMit);
 void StopFolderMonitor();
 BOOL StartFolderMonitor(HWND hDlg);
 
@@ -43,6 +44,7 @@ HWND DoCreateMenu(HWND hWnd)
 	AppendMenu(hSubMenuFile, MF_STRING, ID_CONVERT_VIDEO, L"转换视频为图片集（暂不支持）");
 	AppendMenu(hSubMenuOption, MF_STRING, ID_EXPORT_CONFIG, L"导出设置（暂不支持）");
 	AppendMenu(hSubMenuAbout, MF_STRING, ID_VERSION, L"版本");
+	AppendMenu(hSubMenuAbout, MF_STRING, ID_MIT, L"许可证");
 
 	AppendMenu(hMenu, MF_STRING | MF_POPUP, (UINT_PTR)hSubMenuFile, L"文件(&L)");
 	AppendMenu(hMenu, MF_STRING | MF_POPUP, (UINT_PTR)hSubMenuOption, L"选项(&O)");
@@ -52,15 +54,24 @@ HWND DoCreateMenu(HWND hWnd)
 	return 0;
 }
 
-BOOL DoCreateDialog(HWND hWnd, HWND* hPagePicture)
+BOOL DoCreateDialog(HWND hWnd, HWND* hPagePicture, HWND* hPageAbout, HWND* hPageMit)
 {
 	*hPagePicture = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEPICTURE), hWnd, DlgProc_Picture);
+	*hPageAbout = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEABOUT), hWnd, DlgProc_About);
+	*hPageMit = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEMIT), hWnd, DlgProc_Mit);
 	if (*hPagePicture == NULL)
 	{
 		MessageBox(NULL, L"Failed to create the dialog", L"Error", NULL);
 		return FALSE;
 	}
+	if (*hPageAbout == NULL)
+	{
+		MessageBox(NULL, L"Failed to create the about page", L"Error", NULL);
+		return FALSE;
+	}
 	ShowWindow(*hPagePicture, SW_SHOW);
+	ShowWindow(*hPageAbout, SW_HIDE);
+	ShowWindow(*hPageMit, SW_HIDE);
 	return TRUE;
 }
 
@@ -307,7 +318,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	{
 	case WM_CREATE:
 		DoCreateMenu(hWnd);
-		DoCreateDialog(hWnd, &hPagePicture);
+		DoCreateDialog(hWnd, &hPagePicture, &hPageAbout, &hPageMit);
 		return 0;
 	case WM_COMMAND:
 	{
@@ -315,11 +326,29 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		switch (WM_ID)
 		{
 		case ID_VERSION:
-			MessageBox(hWnd,
-				L"LabelEX - for Yolo\n版本: 0.0.3\n(Developer)Build 00012",
-				L"关于",
-				MB_OK);
+		{
+			RECT rcParent;
+			GetWindowRect(hWnd, &rcParent);
+			int dialogWidth = IDCForDpi(hPageAbout, 300);
+			int dialogHeight = IDCForDpi(hPageAbout, 260);
+			int x = rcParent.left + (rcParent.right - rcParent.left - dialogWidth) / 2;
+			int y = rcParent.top + (rcParent.bottom - rcParent.top - dialogHeight) / 2;
+			SetWindowPos(hPageAbout, NULL, x, y, dialogWidth, dialogHeight, SWP_NOZORDER);
+			ShowWindow(hPageAbout, SW_SHOW);
 			return 0;
+		}
+		case ID_MIT:
+		{
+			RECT rcParent;
+			GetWindowRect(hWnd, &rcParent);
+			int dialogWidth = IDCForDpi(hPageMit, 500);
+			int dialogHeight = IDCForDpi(hPageMit, 400);
+			int x = rcParent.left + (rcParent.right - rcParent.left - dialogWidth) / 2;
+			int y = rcParent.top + (rcParent.bottom - rcParent.top - dialogHeight) / 2;
+			SetWindowPos(hPageMit, NULL, x, y, dialogWidth, dialogHeight, SWP_NOZORDER);
+			ShowWindow(hPageMit, SW_SHOW);
+			return 0;
+		}
 		case ID_OPEN_FOLDER:
 		{
 			DoSelectFolder(hPagePicture);

@@ -13,6 +13,7 @@ add_compile_definitions(UNICODE _UNICODE)
 set(SOURCES
 	src/main.cpp
 	src/PagePicture.cpp
+	src/PageAbout.cpp
 )
 
 set(HEADERS

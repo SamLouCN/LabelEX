@@ -442,10 +442,10 @@ void LoadBBoxesFromFile(const std::wstring& filePath, int imgWidth, int imgHeigh
 	{
 		BBox box;
 		box.classId = classId;
-		box.left = (int)((xc - wn / 2.0f) * imgWidth);
-		box.top = (int)((yc - hn / 2.0f) * imgHeight);
-		box.right = (int)((xc + wn / 2.0f) * imgWidth);
-		box.bottom = (int)((yc + hn / 2.0f) * imgHeight);
+		box.left = (int)((xc - wn / 2.0f) * imgWidth + 0.5f);
+		box.top = (int)((yc - hn / 2.0f) * imgHeight + 0.5f);
+		box.right = (int)((xc + wn / 2.0f) * imgWidth + 0.5f);
+		box.bottom = (int)((yc + hn / 2.0f) * imgHeight + 0.5f);
 		box.left = max(0, min(box.left, imgWidth));
 		box.right = max(0, min(box.right, imgWidth));
 		box.top = max(0, min(box.top, imgHeight));
@@ -495,8 +495,10 @@ LRESULT CALLBACK PicSubclassProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 		FillRect(hdcMem, &rcClient, hBrush);
 		DeleteObject(hBrush);
 
+		int fontSize = IDCForDpi(hPagePicture, 30);
+
 		HFONT hFont = CreateFont(
-			40, 0, 0, 0,
+			fontSize, 0, 0, 0,
 			FW_BOLD, FALSE, FALSE, FALSE,
 			DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,
 			DEFAULT_PITCH | FF_DONTCARE, L"Microsoft Yahei UI"
@@ -869,8 +871,8 @@ INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 		SetWindowPos(GetDlgItem(hDlg, IDC_LISTVIEW), NULL, margin, margin, listViewWidth, rcDlg.bottom - rcDlg.top - 2 * margin, SWP_NOZORDER);
 		SetWindowPos(GetDlgItem(hDlg, IDC_PICTURE), NULL, workSpaceLeft, margin, rcDlg.right - rcDlg.left - 3 * margin - listViewWidth, rcDlg.bottom - rcDlg.top - 19 * margin, SWP_NOZORDER);
 		SetWindowPos(GetDlgItem(hDlg, IDC_OK), NULL, rcDlg.right - rcDlg.left - 12 * margin, wsFifthRowTop, 11 * margin, 3 * margin, SWP_NOZORDER);
-		SetWindowPos(GetDlgItem(hDlg, IDC_ST_NUMBER), NULL, workSpaceLeft, workSpaceTop + margin, 8 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
-		SetWindowPos(GetDlgItem(hDlg, IDC_NUMBER), NULL, workSpaceLeft + 9 * margin, workSpaceTop + margin - minLen, 4 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_ST_NUMBER), NULL, workSpaceLeft, workSpaceTop + margin, 9 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_NUMBER), NULL, workSpaceLeft + 10 * margin, workSpaceTop + margin - minLen, 4 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
 		SetWindowPos(GetDlgItem(hDlg, IDC_NAME_1), NULL, workSpaceLeft + minLen, wsSecondRowTop, nameWidth, 3 * margin, SWP_NOZORDER);
 		SetWindowPos(GetDlgItem(hDlg, IDC_NAME_2), NULL, workSpaceLeft + minLen + nameWidthWithMargin, wsSecondRowTop, nameWidth, 3 * margin, SWP_NOZORDER);
 		SetWindowPos(GetDlgItem(hDlg, IDC_NAME_3), NULL, workSpaceLeft + minLen + 2 * nameWidthWithMargin, wsSecondRowTop, nameWidth, 3 * margin, SWP_NOZORDER);

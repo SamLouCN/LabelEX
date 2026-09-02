@@ -3,8 +3,11 @@
 // π© LabelEX.rc  π”√
 //
 #define IDI_MAIN_ICON					100
+#define IDB_BITMAP1						199
 #define IDD_DIALOG1                     101
 #define IDD_PAGEPICTURE                 101
+#define IDD_PAGEABOUT	                201
+#define IDD_PAGEMIT						211
 #define IDC_PICTURE                     1004
 #define IDC_OK                          1005
 #define IDC_BACK                        1006
@@ -62,8 +65,13 @@
 #define IDC_SWITCH_CLASS7				1058
 #define IDC_SWITCH_CLASS8				1059
 #define IDC_SWITCH_CLASS9				1060
-
-
+#define IDC_PICTURE_SL					2001
+#define IDC_ST_NAME						2002
+#define IDC_ST_VERSION					2003
+#define IDC_ST_COPYRIGHT				2004
+#define IDC_ST_ANNOUNCE					2005
+#define IDC_VIEW_INFO					2006
+#define IDC_LICENSE_TEXT				2101
 
 
 // Next default values for new objects
