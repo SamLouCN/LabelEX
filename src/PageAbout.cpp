@@ -23,7 +23,7 @@ INT_PTR CALLBACK DlgProc_About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		GetClientRect(hDlg, &rcDlg);
 		UINT margin = IDCForDpi(hDlg, 10);
 		UINT minLen = IDCForDpi(hDlg, 1);
-		SetWindowPos(GetDlgItem(hDlg, IDC_PICTURE_SL), NULL, rcDlg.left + margin, rcDlg.top + margin, rcDlg.right - rcDlg.left - 2 * margin, 8 * margin, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_PICTURE_SL), NULL, rcDlg.left + margin, rcDlg.top + margin, rcDlg.right - rcDlg.left - 2 * margin, 8 * margin + 5 * minLen, SWP_NOZORDER);
 		SetWindowPos(GetDlgItem(hDlg, IDC_ST_NAME), NULL, rcDlg.left + margin, rcDlg.top + 10 * margin, rcDlg.right - rcDlg.left - 2 * margin, 2 * margin, SWP_NOZORDER);
 		SetWindowPos(GetDlgItem(hDlg, IDC_ST_VERSION), NULL, rcDlg.left + margin, rcDlg.top + 12 * margin, rcDlg.right - rcDlg.left - 2 * margin, 2 * margin, SWP_NOZORDER);
 		SetWindowPos(GetDlgItem(hDlg, IDC_ST_COPYRIGHT), NULL, rcDlg.left + margin, rcDlg.top + 14 * margin, rcDlg.right - rcDlg.left - 2 * margin, 2 * margin, SWP_NOZORDER);
@@ -66,9 +66,9 @@ INT_PTR CALLBACK DlgProc_Mit(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPar
 			L"in the Software without restriction, including without limitation the rights "
 			L"to use, copy, modify, merge, publish, distribute, sublicense, and/or sell "
 			L"copies of the Software, and to permit persons to whom the Software is "
-			L"furnished to do so, subject to the following conditions: "
+			L"furnished to do so, subject to the following conditions: \r\n\r\n"
 			L"The above copyright notice and this permission notice shall be included in all "
-			L"copies or substantial portions of the Software. \r\n"
+			L"copies or substantial portions of the Software. \r\n\r\n"
 			L"THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR "
 			L"IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, "
 			L"FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE "

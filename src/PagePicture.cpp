@@ -4,6 +4,9 @@
 #define IDC_LISTVIEW 5001
 #define WM_USER_REFRESH_LIST (WM_USER + 100)
 #define WM_USER_UPDATE_ITEM (WM_USER + 101)
+#define WM_USER_UPDATE_LISTVIEW (WM_USER + 200)
+#define WM_USER_UPDATE_PROGRESS (WM_USER + 201) 
+#define WM_USER_STOP_MARQUEE (WM_USER + 301)
 
 #include "main.h"
 
@@ -14,8 +17,14 @@ struct BBox {
 	int classId;
 };
 
+struct ImageFileInfo {
+	std::wstring fileName;
+	BOOL status;
+};
+
 Bitmap* pCurrentImage = nullptr;
 HWND hImageCtrl = nullptr;
+HWND hProgressDlg = nullptr;
 std::vector<BBox> bboxes;
 int currentClassId = 0;
 int selectedIndex = -1;
@@ -30,7 +39,6 @@ wchar_t szFolderPath[MAX_PATH] = { 0 };
 std::wstring currentImagePath;
 
 void DoSelectFolder(HWND hWnd);
-void RefreshList(HWND hWnd);
 BOOL IsImageFile(LPCWSTR szExt);
 BOOL DoCreateListView(HWND hWnd);
 void LoadBBoxesFromFile(const std::wstring& filePath, int imgWidth, int imgHeight);
@@ -61,7 +69,7 @@ void DoSelectFolder(HWND hWnd)
 					wcscpy_s(szFolderPath, pszPath);
 					CoTaskMemFree(pszPath);
 					StartFolderMonitor(hPagePicture);
-					RefreshList(hWnd);
+					PostMessage(hPagePicture, WM_USER_REFRESH_LIST, 0, 0);
 				}
 				pItem->Release();
 			}
@@ -71,20 +79,17 @@ void DoSelectFolder(HWND hWnd)
 	CoUninitialize();
 }
 
-void RefreshList(HWND hWnd)
+DWORD WINAPI RefreshListThread(LPVOID lpParam)
 {
-	HWND hList = GetDlgItem(hWnd, IDC_LISTVIEW);
-	if (!hList)
-	{
-		return;
-	}
+	HWND hDlg = (HWND)lpParam;
+	HWND hList = GetDlgItem(hDlg, IDC_LISTVIEW);
 	if (szFolderPath[0] == 0)
 	{
-		return;
+		return 0;
+		PostMessage(hProgressDlg, WM_USER_STOP_MARQUEE, 0, 0);
 	}
 
-	ListView_DeleteAllItems(hList);
-
+	std::vector<ImageFileInfo> fileList;
 	wchar_t szSearch[MAX_PATH];
 	StringCchPrintf(szSearch, _countof(szSearch), L"%s\\*.*", szFolderPath);
 
@@ -92,7 +97,7 @@ void RefreshList(HWND hWnd)
 	HANDLE hFind = FindFirstFile(szSearch, &fd);
 	if (hFind == INVALID_HANDLE_VALUE)
 	{
-		return;
+		return FALSE;
 	}
 
 	do
@@ -114,24 +119,52 @@ void RefreshList(HWND hWnd)
 		wchar_t szTxtPath[MAX_PATH];
 		StringCchPrintf(szTxtPath, _countof(szTxtPath), L"%s\\%s.txt", szFolderPath, szBaseName);
 
-		BOOL bTxtExists = PathFileExists(szTxtPath);
+		ImageFileInfo info;
+		info.fileName = fd.cFileName;
+		info.status = PathFileExists(szTxtPath);
+		fileList.push_back(info);
+	} while (FindNextFile(hFind, &fd));
+	FindClose(hFind);
 
+	std::vector<ImageFileInfo>* pData = new std::vector<ImageFileInfo>(std::move(fileList));
+	PostMessage(hPagePicture, WM_USER_UPDATE_LISTVIEW, (WPARAM)pData, 0);
+	return 0;
+}
+
+void RefreshListUI(HWND hList, const std::vector<ImageFileInfo>& fileList)
+{
+	SendMessage(hList, WM_SETREDRAW, FALSE, 0);
+	ListView_DeleteAllItems(hList);
+
+	for (size_t i = 0; i < fileList.size(); ++i)
+	{
+		const auto& info = fileList[i];
 		LVITEM item = { 0 };
 		item.mask = LVIF_TEXT | LVIF_PARAM;
 		item.pszText = (LPWSTR)L"";
 		item.iItem = ListView_GetItemCount(hList);
-		item.lParam = (LPARAM)bTxtExists;
+		item.lParam = (LPARAM)info.status;
 		int nIndex = ListView_InsertItem(hList, &item);
 		if (nIndex == -1)
 		{
 			continue;
 		}
-
-		ListView_SetItemText(hList, nIndex, 0, (LPWSTR)(bTxtExists ? L"\u2714" : L"    \u2716"));
-		ListView_SetItemText(hList, nIndex, 1, fd.cFileName);
-		
-	} while (FindNextFile(hFind, &fd));
-	FindClose(hFind);
+		ListView_SetItemText(hList, nIndex, 0, (LPWSTR)(info.status ? L"\u2714" : L"    \u2716"));
+		ListView_SetItemText(hList, nIndex, 1, (LPWSTR)info.fileName.c_str());
+		if ((i % 50) == 0)
+		{
+			MSG msg;
+			while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+			{
+				if (msg.message == WM_QUIT) break;
+				TranslateMessage(&msg);
+				DispatchMessage(&msg);
+			}
+		}
+	}
+	SendMessage(hList, WM_SETREDRAW, TRUE, 0);
+	InvalidateRect(hList, NULL, TRUE);
+	UpdateWindow(hList);
 }
 
 void UpdateSingleItemStatus(HWND hDlg, LPCWSTR szBaseName, BOOL bExist)
@@ -808,6 +841,50 @@ LRESULT CALLBACK PicSubclassProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 	return CallWindowProc(oldPicProc, hWnd, message, wParam, lParam);
 }
 
+INT_PTR CALLBACK DlgProc_Process(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	switch (message)
+	{
+	case WM_INITDIALOG:
+	{
+		hProgressDlg = hDlg;
+		int baseWidth = 280;
+		int baseHeight = 100;
+		int scaledWidth = IDCForDpi(hDlg, baseWidth);
+		int scaledHeight = IDCForDpi(hDlg, baseHeight);
+		RECT rcParent;
+		HWND hParent = GetParent(hDlg);
+		hParent && GetWindowRect(hParent, &rcParent);
+		int x = rcParent.left + (rcParent.right - rcParent.left - scaledWidth) / 2;
+		int y = rcParent.top + (rcParent.bottom - rcParent.top - scaledHeight) / 2;
+		SetWindowPos(hDlg, NULL, x, y, scaledWidth, scaledHeight, SWP_NOZORDER);
+		SendDlgItemMessage(hDlg, IDC_PROGRESS, PBM_SETMARQUEE, TRUE, 30);
+		HANDLE hThread = CreateThread(NULL, 0, RefreshListThread, hDlg, 0, NULL);
+		if (hThread)
+		{
+			CloseHandle(hThread);
+		}
+		return 0;
+	}
+	case WM_USER_STOP_MARQUEE:
+	{
+		SendDlgItemMessage(hDlg, IDC_PROGRESS, PBM_SETMARQUEE, FALSE, 30);
+		EndDialog(hDlg, IDOK);
+		return 0;
+	}
+	case WM_SIZE:
+	{
+		RECT rcDlg;
+		GetClientRect(hDlg, &rcDlg);
+		UINT margin = IDCForDpi(hDlg, 10);
+		UINT minLen = IDCForDpi(hDlg, 1);
+		SetWindowPos(GetDlgItem(hDlg, IDC_PROGRESS), NULL, rcDlg.left + 2 * margin, rcDlg.top + 2 * margin, rcDlg.right - rcDlg.left - 4 * margin, rcDlg.bottom - rcDlg.top - 4 * margin, SWP_NOZORDER);
+		return 0;
+	}
+	}
+	return FALSE;
+}
+
 INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	switch (message)
@@ -908,7 +985,22 @@ INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 	}
 	case WM_USER_REFRESH_LIST:
 	{
-		RefreshList(hDlg);
+		DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEPROCESS), hDlg, DlgProc_Process);
+		return 0;
+	}
+	case WM_USER_UPDATE_LISTVIEW:
+	{
+		std::vector<ImageFileInfo>* pData = (std::vector<ImageFileInfo>*)wParam;
+		if (pData)
+		{
+			HWND hList = GetDlgItem(hDlg, IDC_LISTVIEW);
+			RefreshListUI(hList, *pData);
+			delete pData;
+			if (hProgressDlg)
+			{
+				PostMessage(hProgressDlg, WM_USER_STOP_MARQUEE, 0, 0);
+			}
+		}
 		return 0;
 	}
 	case WM_USER_UPDATE_ITEM:

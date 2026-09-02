@@ -5,10 +5,10 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #ifndef UNICODE
 #define UNICODE
 #endif
-#define ID_OPEN_YAML 1001
+#define ID_OPEN_VIDEO 1001
 #define ID_OPEN_FOLDER 1002
-#define ID_CONVERT_VIDEO 1003
-#define ID_EXPORT_CONFIG 2001
+#define ID_EXPORT_DATASET 1003
+#define ID_CONFIG_EXPORT 2001
 #define ID_VERSION 3001
 #define ID_MIT 3002
 #define WM_USER_REFRESH_LIST (WM_USER + 100)
@@ -23,10 +23,10 @@ static wchar_t szTitle[] = L"LabelEX";
 HINSTANCE hInst;
 HANDLE hExitEvent = NULL;
 HANDLE hMonitorThread = NULL;
-HWND hPagePicture, hPageAbout, hPageMit;
+HWND hPagePicture, hPageAbout, hPageMit, hPageVideo, hPageProcess;
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-BOOL DoCreateDialog(HWND hWnd, HWND* hPagePicture, HWND* hPageAbout, HWND* hPageMit);
+BOOL DoCreateDialog(HWND hWnd, HWND* hPagePicture, HWND* hPageAbout, HWND* hPageMit, HWND* hPageVideo);
 void StopFolderMonitor();
 BOOL StartFolderMonitor(HWND hDlg);
 
@@ -39,10 +39,11 @@ HWND DoCreateMenu(HWND hWnd)
 	HMENU hSubMenuOption = CreatePopupMenu();
 	HMENU hSubMenuAbout = CreatePopupMenu();
 
-	AppendMenu(hSubMenuFile, MF_STRING, ID_OPEN_YAML, L"打开数据集配置文件（暂不支持）");
+	AppendMenu(hSubMenuFile, MF_STRING, ID_OPEN_VIDEO, L"打开视频");
 	AppendMenu(hSubMenuFile, MF_STRING, ID_OPEN_FOLDER, L"打开文件夹");
-	AppendMenu(hSubMenuFile, MF_STRING, ID_CONVERT_VIDEO, L"转换视频为图片集（暂不支持）");
-	AppendMenu(hSubMenuOption, MF_STRING, ID_EXPORT_CONFIG, L"导出设置（暂不支持）");
+	AppendMenu(hSubMenuFile, MF_SEPARATOR, 0, NULL);
+	AppendMenu(hSubMenuFile, MF_STRING, ID_EXPORT_DATASET, L"导出数据集");
+	AppendMenu(hSubMenuOption, MF_STRING, ID_CONFIG_EXPORT, L"导出设置");
 	AppendMenu(hSubMenuAbout, MF_STRING, ID_VERSION, L"版本");
 	AppendMenu(hSubMenuAbout, MF_STRING, ID_MIT, L"许可证");
 
@@ -54,11 +55,12 @@ HWND DoCreateMenu(HWND hWnd)
 	return 0;
 }
 
-BOOL DoCreateDialog(HWND hWnd, HWND* hPagePicture, HWND* hPageAbout, HWND* hPageMit)
+BOOL DoCreateDialog(HWND hWnd, HWND* hPagePicture, HWND* hPageAbout, HWND* hPageMit, HWND* hPageVideo)
 {
 	*hPagePicture = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEPICTURE), hWnd, DlgProc_Picture);
 	*hPageAbout = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEABOUT), hWnd, DlgProc_About);
 	*hPageMit = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEMIT), hWnd, DlgProc_Mit);
+	*hPageVideo = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEVIDEO), hWnd, DlgProc_Video);
 	if (*hPagePicture == NULL)
 	{
 		MessageBox(NULL, L"Failed to create the dialog", L"Error", NULL);
@@ -69,9 +71,20 @@ BOOL DoCreateDialog(HWND hWnd, HWND* hPagePicture, HWND* hPageAbout, HWND* hPage
 		MessageBox(NULL, L"Failed to create the about page", L"Error", NULL);
 		return FALSE;
 	}
+	if (*hPageMit == NULL)
+	{
+		MessageBox(NULL, L"Failed to create the license page", L"Error", NULL);
+		return FALSE;
+	}
+	if (*hPageVideo == NULL)
+	{
+		MessageBox(NULL, L"Failed to create the video converting page", L"Error", NULL);
+		return FALSE;
+	}
 	ShowWindow(*hPagePicture, SW_SHOW);
 	ShowWindow(*hPageAbout, SW_HIDE);
 	ShowWindow(*hPageMit, SW_HIDE);
+	ShowWindow(*hPageVideo, SW_HIDE);
 	return TRUE;
 }
 
@@ -269,7 +282,10 @@ int WINAPI wWinMain(
 	wcex.lpszClassName = szWindowClass;
 	wcex.hIconSm = LoadIcon(wcex.hInstance, IDI_APPLICATION);
 	
-	InitCommonControls();
+	INITCOMMONCONTROLSEX icex;
+	icex.dwSize = sizeof(INITCOMMONCONTROLSEX);
+	icex.dwICC = ICC_STANDARD_CLASSES | ICC_PROGRESS_CLASS;
+	InitCommonControlsEx(&icex);
 
 	if (!RegisterClassEx(&wcex))
 	{
@@ -318,7 +334,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	{
 	case WM_CREATE:
 		DoCreateMenu(hWnd);
-		DoCreateDialog(hWnd, &hPagePicture, &hPageAbout, &hPageMit);
+		DoCreateDialog(hWnd, &hPagePicture, &hPageAbout, &hPageMit, &hPageVideo);
 		return 0;
 	case WM_COMMAND:
 	{
@@ -352,6 +368,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case ID_OPEN_FOLDER:
 		{
 			DoSelectFolder(hPagePicture);
+			return 0;
+		}
+		case ID_OPEN_VIDEO:
+		{
+			RECT rcParent;
+			GetWindowRect(hWnd, &rcParent);
+			int dialogWidth = IDCForDpi(hPageVideo, 800);
+			int dialogHeight = IDCForDpi(hPageVideo, 600);
+			int x = rcParent.left + (rcParent.right - rcParent.left - dialogWidth) / 2;
+			int y = rcParent.top + (rcParent.bottom - rcParent.top - dialogHeight) / 2;
+			SetWindowPos(hPageVideo, NULL, x, y, dialogWidth, dialogHeight, SWP_NOZORDER);
+			ShowWindow(hPageVideo, SW_SHOW);
 			return 0;
 		}
 		default:

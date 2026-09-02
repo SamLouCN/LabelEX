@@ -14,6 +14,7 @@ set(SOURCES
 	src/main.cpp
 	src/PagePicture.cpp
 	src/PageAbout.cpp
+	src/PageVideo.cpp
 )
 
 set(HEADERS

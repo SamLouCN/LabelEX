@@ -8,6 +8,8 @@
 #define IDD_PAGEPICTURE                 101
 #define IDD_PAGEABOUT	                201
 #define IDD_PAGEMIT						211
+#define IDD_PAGEVIDEO					301
+#define IDD_PAGEPROCESS					401
 #define IDC_PICTURE                     1004
 #define IDC_OK                          1005
 #define IDC_BACK                        1006
@@ -72,7 +74,7 @@
 #define IDC_ST_ANNOUNCE					2005
 #define IDC_VIEW_INFO					2006
 #define IDC_LICENSE_TEXT				2101
-
+#define IDC_PROGRESS					4001
 
 // Next default values for new objects
 // 
