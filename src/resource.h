@@ -10,6 +10,9 @@
 #define IDD_PAGEMIT						211
 #define IDD_PAGEVIDEO					301
 #define IDD_PAGEPROCESS					401
+#define IDD_PAGEDATASET					501
+#define IDD_PAGEEXPORTCFG				601
+#define IDD_PAGEINTERFACECFG			701
 #define IDC_PICTURE                     1004
 #define IDC_OK                          1005
 #define IDC_BACK                        1006
@@ -75,7 +78,54 @@
 #define IDC_VIEW_INFO					2006
 #define IDC_ST_FFMPEG					2007
 #define IDC_LICENSE_TEXT				2101
+#define IDC_ST_SOURCE					3001
+#define IDC_SELECT_SOURCE				3002
+#define IDC_SOURCE						3003
+#define IDC_ST_SOURCE_INFO				3004
+#define IDC_ST_SOURCE_FORM				3005
+#define IDC_SOURCE_FORM					3006
+#define IDC_ST_SOURCE_RES				3007
+#define IDC_SOURCE_RES					3008
+#define IDC_ST_SOURCE_FPS				3009
+#define IDC_SOURCE_FPS					3010
+#define IDC_ST_EXPORT_CONFIG			3011
+#define IDC_ST_EXPORT_DIR				3012
+#define IDC_SELECT_EXPORT				3013
+#define IDC_EXPORT_DIR					3014
+#define IDC_ST_EXPORT_FORM				3015
+#define IDC_EXPORT_FORM					3016
+#define IDC_ST_EXPORT_QUALITY			3017
+#define IDC_EXPORT_QUALITY				3018
+#define IDC_ST_EXPORT_FPS				3019
+#define IDC_EXPORT_FPS					3020
+#define IDC_EXPORT						3021
+#define IDC_EXPORT_CALI					3022
 #define IDC_PROGRESS					4001
+#define IDC_SELECT_DATASET				5002
+#define IDC_ST_TRAIN_PERCENT			5004
+#define IDC_TRAIN_PERCENT				5005
+#define IDC_EXPORT_YAML					5006
+#define IDC_ST_EXPORT_1					5007
+#define IDC_ST_EXPORT_2					5008
+#define IDC_ST_EXPORT_3					5009
+#define IDC_ST_EXPORT_4					5010
+#define IDC_ST_EXPORT_5					5011
+#define IDC_ST_EXPORT_6					5012
+#define IDC_ST_EXPORT_7					5013
+#define IDC_ST_EXPORT_8					5014
+#define IDC_ST_EXPORT_9					5015
+#define IDC_ST_EXPORT_10				5016
+#define IDC_EXPORT_NAME_1				5017
+#define IDC_EXPORT_NAME_2				5018
+#define IDC_EXPORT_NAME_3				5019
+#define IDC_EXPORT_NAME_4				5020
+#define IDC_EXPORT_NAME_5				5021
+#define IDC_EXPORT_NAME_6				5022
+#define IDC_EXPORT_NAME_7				5023
+#define IDC_EXPORT_NAME_8				5024
+#define IDC_EXPORT_NAME_9				5025
+#define IDC_EXPORT_NAME_10				5026
+
 
 // Next default values for new objects
 // 

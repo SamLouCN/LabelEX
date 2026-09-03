@@ -7,6 +7,11 @@ project(LabelEX LANGUAGES CXX RC)
 # 将源代码添加到此项目的可执行文件。
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(FFMPEG_ROOT "D:/Projects/Reference/LEX_Ref_Repo/ffmpeg_build")
+
+include_directories(${FFMPEG_ROOT}/include)
+
+link_directories(${FFMPEG_ROOT}/lib)
 
 add_compile_definitions(UNICODE _UNICODE)
 
@@ -15,6 +20,8 @@ set(SOURCES
 	src/PagePicture.cpp
 	src/PageAbout.cpp
 	src/PageVideo.cpp
+	src/PageExport.cpp
+	src/PageConfig.cpp
 )
 
 set(HEADERS
@@ -48,6 +55,9 @@ target_link_libraries(${PROJECT_NAME}
 	shlwapi
 	ole32
 	strsafe
+	avcodec
+	avformat
+	avutil
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
