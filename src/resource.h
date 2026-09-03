@@ -73,6 +73,7 @@
 #define IDC_ST_COPYRIGHT				2004
 #define IDC_ST_ANNOUNCE					2005
 #define IDC_VIEW_INFO					2006
+#define IDC_ST_FFMPEG					2007
 #define IDC_LICENSE_TEXT				2101
 #define IDC_PROGRESS					4001
 

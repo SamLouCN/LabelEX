@@ -28,7 +28,9 @@ INT_PTR CALLBACK DlgProc_About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		SetWindowPos(GetDlgItem(hDlg, IDC_ST_VERSION), NULL, rcDlg.left + margin, rcDlg.top + 12 * margin, rcDlg.right - rcDlg.left - 2 * margin, 2 * margin, SWP_NOZORDER);
 		SetWindowPos(GetDlgItem(hDlg, IDC_ST_COPYRIGHT), NULL, rcDlg.left + margin, rcDlg.top + 14 * margin, rcDlg.right - rcDlg.left - 2 * margin, 2 * margin, SWP_NOZORDER);
 		SetWindowPos(GetDlgItem(hDlg, IDC_ST_ANNOUNCE), NULL, rcDlg.left + margin, rcDlg.top + 16 * margin, rcDlg.right - rcDlg.left - 2 * margin, 2 * margin, SWP_NOZORDER);
-		SetWindowPos(GetDlgItem(hDlg, IDC_OK), NULL, (rcDlg.right - rcDlg.left) / 2 - 5 * margin, rcDlg.top + 18 * margin, 10 * margin, 3 * margin, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_ST_FFMPEG), NULL, rcDlg.left + margin, rcDlg.top + 18 * margin, rcDlg.right - rcDlg.left - 2 * margin, 2 * margin, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_OK), NULL, (rcDlg.right - rcDlg.left) / 2 - 5 * margin, rcDlg.top + 20 * margin, 10 * margin, 3 * margin, SWP_NOZORDER);
+		return TRUE;
 	}
 	case WM_COMMAND:
 	{
@@ -36,14 +38,14 @@ INT_PTR CALLBACK DlgProc_About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		switch (WM_ID)
 		{
 		case IDC_OK:
-			ShowWindow(hDlg, SW_HIDE);
+			DestroyWindow(hDlg);
 			return TRUE;
 		}
 		return TRUE;
 	}
 	case WM_CLOSE:
 	{
-		ShowWindow(hDlg, SW_HIDE);
+		DestroyWindow(hDlg);
 		return TRUE;
 	}
 	}
@@ -75,7 +77,21 @@ INT_PTR CALLBACK DlgProc_Mit(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPar
 			L"AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER "
 			L"LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, "
 			L"OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE "
-			L"SOFTWARE.";
+			L"SOFTWARE.\r\n\r\n"
+			L"This project, LabelEX, uses the library 'FFmpeg' (https://ffmpeg.org). \r\n\r\n"
+			L"FFmpeg is free software; you can redistribute it and/or modify it under the terms "
+			L"of the GNU Lesser General Public License as published by the Free Software "
+			L"Foundation; either version 2.1 of the License, or (at your option) any later "
+			L"version.\r\n\r\n"
+			L"FFmpeg is distributed in the hope that it will be useful, but WITHOUT ANY "
+			L"WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A "
+			L"PARTICULAR PURPOSE.See the GNU Lesser General Public License for more details.\r\n\r\n"
+			L"You should have received a copy of the GNU Lesser General Public License along "
+			L"with FFmpeg; if not, write to the Free Software Foundation, Inc., 51 Franklin "
+			L"Street, Fifth Floor, Boston, MA 02110 - 1301 USA.\r\n\r\n"
+			L"LabelEX dynamically links to the unmodified FFmpeg libraries.\r\n\r\n"
+			L"The source code for FFmpeg used in this project is available at :\r\n"
+			L"[https://git.ffmpeg.org/ffmpeg.git]";
 		SetDlgItemText(hDlg, IDC_LICENSE_TEXT, licenseText);
 		PostMessage(hDlg, WM_SIZE, 0, 0);
 
@@ -88,10 +104,11 @@ INT_PTR CALLBACK DlgProc_Mit(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPar
 		UINT margin = IDCForDpi(hDlg, 10);
 		UINT minLen = IDCForDpi(hDlg, 1);
 		SetWindowPos(GetDlgItem(hDlg, IDC_LICENSE_TEXT), NULL, rcDlg.left + margin, rcDlg.top + margin, rcDlg.right - rcDlg.left - 2 * margin, rcDlg.bottom - rcDlg.top - 2 * margin, SWP_NOZORDER);
+		return TRUE;
 	}
 	case WM_CLOSE:
 	{
-		ShowWindow(hDlg, SW_HIDE);
+		DestroyWindow(hDlg);
 		return TRUE;
 	}
 	}

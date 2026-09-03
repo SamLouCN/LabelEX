@@ -26,7 +26,7 @@ HANDLE hMonitorThread = NULL;
 HWND hPagePicture, hPageAbout, hPageMit, hPageVideo, hPageProcess;
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-BOOL DoCreateDialog(HWND hWnd, HWND* hPagePicture, HWND* hPageAbout, HWND* hPageMit, HWND* hPageVideo);
+BOOL DoCreateDialog(HWND hWnd, HWND* hPagePicture);
 void StopFolderMonitor();
 BOOL StartFolderMonitor(HWND hDlg);
 
@@ -55,36 +55,15 @@ HWND DoCreateMenu(HWND hWnd)
 	return 0;
 }
 
-BOOL DoCreateDialog(HWND hWnd, HWND* hPagePicture, HWND* hPageAbout, HWND* hPageMit, HWND* hPageVideo)
+BOOL DoCreateDialog(HWND hWnd, HWND* hPagePicture)
 {
 	*hPagePicture = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEPICTURE), hWnd, DlgProc_Picture);
-	*hPageAbout = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEABOUT), hWnd, DlgProc_About);
-	*hPageMit = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEMIT), hWnd, DlgProc_Mit);
-	*hPageVideo = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEVIDEO), hWnd, DlgProc_Video);
 	if (*hPagePicture == NULL)
 	{
 		MessageBox(NULL, L"Failed to create the dialog", L"Error", NULL);
 		return FALSE;
 	}
-	if (*hPageAbout == NULL)
-	{
-		MessageBox(NULL, L"Failed to create the about page", L"Error", NULL);
-		return FALSE;
-	}
-	if (*hPageMit == NULL)
-	{
-		MessageBox(NULL, L"Failed to create the license page", L"Error", NULL);
-		return FALSE;
-	}
-	if (*hPageVideo == NULL)
-	{
-		MessageBox(NULL, L"Failed to create the video converting page", L"Error", NULL);
-		return FALSE;
-	}
 	ShowWindow(*hPagePicture, SW_SHOW);
-	ShowWindow(*hPageAbout, SW_HIDE);
-	ShowWindow(*hPageMit, SW_HIDE);
-	ShowWindow(*hPageVideo, SW_HIDE);
 	return TRUE;
 }
 
@@ -334,7 +313,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	{
 	case WM_CREATE:
 		DoCreateMenu(hWnd);
-		DoCreateDialog(hWnd, &hPagePicture, &hPageAbout, &hPageMit, &hPageVideo);
+		DoCreateDialog(hWnd, &hPagePicture);
 		return 0;
 	case WM_COMMAND:
 	{
@@ -343,10 +322,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 		case ID_VERSION:
 		{
+			hPageAbout = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEABOUT), hWnd, DlgProc_About);
 			RECT rcParent;
 			GetWindowRect(hWnd, &rcParent);
 			int dialogWidth = IDCForDpi(hPageAbout, 300);
-			int dialogHeight = IDCForDpi(hPageAbout, 260);
+			int dialogHeight = IDCForDpi(hPageAbout, 280);
 			int x = rcParent.left + (rcParent.right - rcParent.left - dialogWidth) / 2;
 			int y = rcParent.top + (rcParent.bottom - rcParent.top - dialogHeight) / 2;
 			SetWindowPos(hPageAbout, NULL, x, y, dialogWidth, dialogHeight, SWP_NOZORDER);
@@ -355,6 +335,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 		case ID_MIT:
 		{
+			hPageMit = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEMIT), hWnd, DlgProc_Mit);
 			RECT rcParent;
 			GetWindowRect(hWnd, &rcParent);
 			int dialogWidth = IDCForDpi(hPageMit, 500);
@@ -372,6 +353,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 		case ID_OPEN_VIDEO:
 		{
+			hPageVideo = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEVIDEO), hWnd, DlgProc_Video);
 			RECT rcParent;
 			GetWindowRect(hWnd, &rcParent);
 			int dialogWidth = IDCForDpi(hPageVideo, 800);
