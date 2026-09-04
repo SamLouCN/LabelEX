@@ -1,7 +1,6 @@
 ﻿#ifndef UNICODE
 #define UNICODE
 #endif
-#define IDC_LISTVIEW 5001
 #define WM_USER_REFRESH_LIST (WM_USER + 100)
 #define WM_USER_UPDATE_ITEM (WM_USER + 101)
 #define WM_USER_STOP_MONITOR (WM_USER + 102)

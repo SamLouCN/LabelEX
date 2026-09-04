@@ -12,6 +12,7 @@
 #define IDD_PAGEPROCESS					401
 #define IDD_PAGEVIDEOPROGRESS			411
 #define IDD_PAGEDATASET					501
+#define IDD_PAGECALI					511
 #define IDD_PAGEEXPORTCFG				601
 #define IDD_PAGEINTERFACECFG			701
 #define IDC_PICTURE                     1004
@@ -126,6 +127,10 @@
 #define IDC_EXPORT_NAME_8				5024
 #define IDC_EXPORT_NAME_9				5025
 #define IDC_EXPORT_NAME_10				5026
+#define IDC_ST_DATASET_DIR				5027
+#define IDC_ST_CALI_DIR					5101
+#define IDC_ST_CALI_PERCENT				5102
+#define IDC_CALI_PERCENT				5103
 
 
 // Next default values for new objects

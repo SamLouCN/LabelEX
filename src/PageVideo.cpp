@@ -14,6 +14,7 @@
 
 wchar_t szVideoPath[MAX_PATH] = { 0 };
 HWND hVideoProgress = NULL;
+int videoCount;
 
 struct ThreadParams
 {
@@ -307,6 +308,7 @@ void DoAnalyseVideo(const wchar_t* szFilePath)
 DWORD WINAPI DoConvertVideo(LPVOID lpParam)
 {
 	ThreadParams* params = (ThreadParams*)lpParam;
+
 	if (params->szVideoPath.empty())
 	{
 		return 0;
@@ -316,6 +318,14 @@ DWORD WINAPI DoConvertVideo(LPVOID lpParam)
 	{
 		return 0;
 	}
+
+	wchar_t szCopy[MAX_PATH];
+	StringCchCopy(szCopy, MAX_PATH, params->szVideoPath.c_str());
+	LPCWSTR pszName = PathFindFileName(szCopy);
+	wchar_t szBaseName[MAX_PATH] = { 0 };
+	StringCchCopy(szBaseName, MAX_PATH, pszName);
+	PathRemoveExtension(szBaseName);
+
 	std::string utf8Path(size_needed, 0);
 	WideCharToMultiByte(CP_UTF8, 0, params->szVideoPath.c_str(), -1, &utf8Path[0], size_needed, NULL, NULL);
 	AVFormatContext* pFormatContext = avformat_alloc_context();
@@ -399,13 +409,13 @@ DWORD WINAPI DoConvertVideo(LPVOID lpParam)
 						wchar_t outPath[MAX_PATH];
 						if (params->format == 0)
 						{
-							swprintf_s(outPath, L"%ws\\frame_%05d.png", params->szImagePath.c_str(), imageCount);
+							swprintf_s(outPath, L"%ws\\%ws_%05d.png", params->szImagePath.c_str(), szBaseName, imageCount);
 							SaveFrameAsPNG(pFrameBGR, outPath);
 							imageCount++;
 						}
 						else if (params->format == 1)
 						{
-							swprintf_s(outPath, L"%ws\\frame_%05d.jpg", params->szImagePath.c_str(), imageCount);
+							swprintf_s(outPath, L"%ws\\%ws_%05d.jpg", params->szImagePath.c_str(), szBaseName, imageCount);
 							SaveFrameAsJPEG(pFrameBGR, outPath, params->quality);
 							imageCount++;
 						}
@@ -452,9 +462,9 @@ INT_PTR CALLBACK DlgProc_VideoProgress(HWND hDlg, UINT message, WPARAM wParam, L
 		int x = rcParent.left + (rcParent.right - rcParent.left - scaledWidth) / 2;
 		int y = rcParent.top + (rcParent.bottom - rcParent.top - scaledHeight) / 2;
 		SetWindowPos(hDlg, NULL, x, y, scaledWidth, scaledHeight, SWP_NOZORDER);
+
 		ThreadParams* params = new ThreadParams();
 		params->format = SendMessage(GetDlgItem(hPageVideo, IDC_EXPORT_FORM), CB_GETCURSEL, 0, 0);
-		
 		params->fps = GetDlgItemInt(hPageVideo, IDC_EXPORT_FPS, NULL, FALSE);
 		params->quality = GetDlgItemInt(hPageVideo, IDC_EXPORT_QUALITY, NULL, FALSE);
 		wchar_t srcBuffer[MAX_PATH] = { 0 };
@@ -465,6 +475,7 @@ INT_PTR CALLBACK DlgProc_VideoProgress(HWND hDlg, UINT message, WPARAM wParam, L
 		params->szImagePath = dirBuffer;
 		params->hDlg = hVideoProgress;
 		params->hPagePicture = hPagePicture;
+
 		HANDLE hThread = CreateThread(NULL, 0, DoConvertVideo, params, 0, NULL);
 		if (hThread)
 		{

@@ -7,7 +7,8 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #endif
 #define ID_OPEN_VIDEO 1001
 #define ID_OPEN_FOLDER 1002
-#define ID_EXPORT_DATASET 1003
+#define ID_EXPORT_CALI 1003
+#define ID_EXPORT_DATASET 1004
 #define ID_CONFIG_EXPORT 2001
 #define ID_CONFIG_INTERFACE 2002
 #define ID_VERSION 3001
@@ -24,7 +25,7 @@ static wchar_t szTitle[] = L"LabelEX";
 HINSTANCE hInst;
 HANDLE hExitEvent = NULL;
 HANDLE hMonitorThread = NULL;
-HWND hPagePicture, hPageAbout, hPageMit, hPageVideo, hPageProcess, hPageDataset, hPageExportCfg, hPageInterfaceCfg;
+HWND hPagePicture, hPageAbout, hPageMit, hPageVideo, hPageProcess, hPageCali, hPageDataset, hPageExportCfg, hPageInterfaceCfg;
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 BOOL DoCreateDialog(HWND hWnd, HWND* hPagePicture);
@@ -43,6 +44,7 @@ HWND DoCreateMenu(HWND hWnd)
 	AppendMenu(hSubMenuFile, MF_STRING, ID_OPEN_VIDEO, L"打开视频");
 	AppendMenu(hSubMenuFile, MF_STRING, ID_OPEN_FOLDER, L"打开文件夹");
 	AppendMenu(hSubMenuFile, MF_SEPARATOR, 0, NULL);
+	AppendMenu(hSubMenuFile, MF_STRING, ID_EXPORT_CALI, L"导出校验集");
 	AppendMenu(hSubMenuFile, MF_STRING, ID_EXPORT_DATASET, L"导出数据集");
 	AppendMenu(hSubMenuOption, MF_STRING, ID_CONFIG_EXPORT, L"导出设置（功能测试中）");
 	AppendMenu(hSubMenuOption, MF_STRING, ID_CONFIG_INTERFACE, L"界面设置（功能测试中）");
@@ -299,7 +301,7 @@ int WINAPI wWinMain(
 	MSG msg;
 	while (GetMessage(&msg, NULL, 0, 0))
 	{
-		if (IsDialogMessage(hPageVideo, &msg))
+		if (IsDialogMessage(hPageVideo, &msg) || IsDialogMessage(hPageCali, &msg) || IsDialogMessage(hPageDataset, &msg))
 		{
 			continue;
 		}
@@ -366,6 +368,19 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			int y = rcParent.top + (rcParent.bottom - rcParent.top - dialogHeight) / 2;
 			SetWindowPos(hPageVideo, NULL, x, y, dialogWidth, dialogHeight, SWP_NOZORDER);
 			ShowWindow(hPageVideo, SW_SHOW);
+			return 0;
+		}
+		case ID_EXPORT_CALI:
+		{
+			hPageCali = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGECALI), hWnd, DlgProc_Cali);
+			RECT rcParent;
+			GetWindowRect(hWnd, &rcParent);
+			int dialogWidth = IDCForDpi(hPageCali, 360);
+			int dialogHeight = IDCForDpi(hPageCali, 200);
+			int x = rcParent.left + (rcParent.right - rcParent.left - dialogWidth) / 2;
+			int y = rcParent.top + (rcParent.bottom - rcParent.top - dialogHeight) / 2;
+			SetWindowPos(hPageCali, NULL, x, y, dialogWidth, dialogHeight, SWP_NOZORDER);
+			ShowWindow(hPageCali, SW_SHOW);
 			return 0;
 		}
 		case ID_EXPORT_DATASET:
