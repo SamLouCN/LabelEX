@@ -22,7 +22,7 @@ INT_PTR CALLBACK DlgProc_Dataset(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 		GetClientRect(hDlg, &rcDlg);
 		UINT margin = IDCForDpi(hDlg, 10);
 		UINT minLen = IDCForDpi(hDlg, 1);
-		UINT fontHeight = IDCForDpi(hDlg, 20);
+		UINT fontHeight = IDCForDpi(hDlg, 19);
 
 		UINT firstColumnLeft = 2 * margin;
 		UINT secondColumnLeft = 22 * margin;
@@ -40,9 +40,9 @@ INT_PTR CALLBACK DlgProc_Dataset(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 
 		HFONT hFont = CreateFont(fontHeight, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
 			DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
-			DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Microsoft Yahei UI"));
+			CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Microsoft Yahei UI"));
 
-		SetWindowPos(GetDlgItem(hDlg, IDC_ST_EXPORT_CONFIG), NULL, firstColumnLeft, firstRowTop, rcDlg.right - rcDlg.left - 4 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_ST_EXPORT_CONFIG), NULL, firstColumnLeft, firstRowTop + 2 * minLen, rcDlg.right - rcDlg.left - 4 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
 		SetWindowPos(GetDlgItem(hDlg, IDC_EXPORT_DIR), NULL, firstColumnLeft, secondRowTop, 49 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
 		SetWindowPos(GetDlgItem(hDlg, IDC_SELECT_DATASET), NULL, 51 * margin + 2 * minLen, secondRowTop, 5 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
 		SetWindowPos(GetDlgItem(hDlg, IDC_ST_TRAIN_PERCENT), NULL, firstColumnLeft, thirdRowTop + 3 * minLen, 9 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);

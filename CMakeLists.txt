@@ -7,7 +7,7 @@ project(LabelEX LANGUAGES CXX RC)
 # 将源代码添加到此项目的可执行文件。
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(FFMPEG_ROOT "D:/Projects/Reference/LEX_Ref_Repo/ffmpeg_build")
+set(FFMPEG_ROOT "D:/Projects/Reference/LEX_Ref_Repo/ffmpeg-8.1.2-full_build-shared")
 
 include_directories(${FFMPEG_ROOT}/include)
 
@@ -58,6 +58,7 @@ target_link_libraries(${PROJECT_NAME}
 	avcodec
 	avformat
 	avutil
+	swscale
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES

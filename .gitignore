@@ -1,6 +1,7 @@
 .vs/
 test.cpp
 build/
+build_64/
 RC*
 RD*
 *.aps

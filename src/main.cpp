@@ -299,11 +299,13 @@ int WINAPI wWinMain(
 	MSG msg;
 	while (GetMessage(&msg, NULL, 0, 0))
 	{
-		if (!TranslateAccelerator(hWnd, hAccel, &msg))
+		if (IsDialogMessage(hPageVideo, &msg))
 		{
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
+			continue;
 		}
+		if (hAccel && TranslateAccelerator(hWnd, hAccel, &msg))
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
 	}
 	GdiplusShutdown(gdiplusToken);
 	return (int)msg.wParam;

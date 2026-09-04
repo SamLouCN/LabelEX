@@ -1,4 +1,12 @@
 #pragma once
+
+extern "C" {
+#include <libavformat/avformat.h>
+#include <libavcodec/avcodec.h>
+#include <libavutil/avutil.h>
+#include <libswscale/swscale.h>
+#include <libavutil/imgutils.h>
+}
 #include <windows.h>
 #include <windowsx.h>
 #include <string.h>
@@ -26,4 +34,4 @@ void UpdateSingleItemStatus(HWND hDlg, LPCWSTR szBaseName, BOOL bExist);
 int IDCForDpi(HWND hWnd, int oldIDC);
 
 extern wchar_t szFolderPath[MAX_PATH];
-extern HWND hPagePicture, hPageProcess;
+extern HWND hPagePicture, hPageAbout, hPageMit, hPageVideo, hPageProcess, hPageDataset, hPageExportCfg, hPageInterfaceCfg;

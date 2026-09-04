@@ -4,9 +4,12 @@
 #define IDC_LISTVIEW 5001
 #define WM_USER_REFRESH_LIST (WM_USER + 100)
 #define WM_USER_UPDATE_ITEM (WM_USER + 101)
+#define WM_USER_STOP_MONITOR (WM_USER + 102)
+#define WM_USER_START_MONITOR (WM_USER + 103)
 #define WM_USER_UPDATE_LISTVIEW (WM_USER + 200)
 #define WM_USER_UPDATE_PROGRESS (WM_USER + 201) 
 #define WM_USER_STOP_MARQUEE (WM_USER + 301)
+#define TIMER_REFRESH_DEBOUNCE 1001
 
 #include "main.h"
 
@@ -37,6 +40,8 @@ POINT dragStart;
 POINT dragOffset;
 wchar_t szFolderPath[MAX_PATH] = { 0 };
 std::wstring currentImagePath;
+BOOL isProcessExist = false;
+BOOL isPendingRefresh = false;
 
 void DoSelectFolder(HWND hWnd);
 BOOL IsImageFile(LPCWSTR szExt);
@@ -85,8 +90,8 @@ DWORD WINAPI RefreshListThread(LPVOID lpParam)
 	HWND hList = GetDlgItem(hDlg, IDC_LISTVIEW);
 	if (szFolderPath[0] == 0)
 	{
-		return 0;
 		PostMessage(hProgressDlg, WM_USER_STOP_MARQUEE, 0, 0);
+		return 0;
 	}
 
 	std::vector<ImageFileInfo> fileList;
@@ -97,7 +102,8 @@ DWORD WINAPI RefreshListThread(LPVOID lpParam)
 	HANDLE hFind = FindFirstFile(szSearch, &fd);
 	if (hFind == INVALID_HANDLE_VALUE)
 	{
-		return FALSE;
+		PostMessage(hProgressDlg, WM_USER_STOP_MARQUEE, 0, 0);
+		return 0;
 	}
 
 	do
@@ -533,7 +539,7 @@ LRESULT CALLBACK PicSubclassProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 		HFONT hFont = CreateFont(
 			fontSize, 0, 0, 0,
 			FW_BOLD, FALSE, FALSE, FALSE,
-			DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,
+			DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
 			DEFAULT_PITCH | FF_DONTCARE, L"Microsoft Yahei UI"
 		);
 		HFONT hOldFont = (HFONT)SelectObject(hdcMem, hFont);
@@ -864,13 +870,13 @@ INT_PTR CALLBACK DlgProc_Process(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 		{
 			CloseHandle(hThread);
 		}
-		return 0;
+		return TRUE;
 	}
 	case WM_USER_STOP_MARQUEE:
 	{
 		SendDlgItemMessage(hDlg, IDC_PROGRESS, PBM_SETMARQUEE, FALSE, 30);
 		EndDialog(hDlg, IDOK);
-		return 0;
+		return TRUE;
 	}
 	case WM_SIZE:
 	{
@@ -879,7 +885,7 @@ INT_PTR CALLBACK DlgProc_Process(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 		UINT margin = IDCForDpi(hDlg, 10);
 		UINT minLen = IDCForDpi(hDlg, 1);
 		SetWindowPos(GetDlgItem(hDlg, IDC_PROGRESS), NULL, rcDlg.left + 2 * margin, rcDlg.top + 2 * margin, rcDlg.right - rcDlg.left - 4 * margin, rcDlg.bottom - rcDlg.top - 4 * margin, SWP_NOZORDER);
-		return 0;
+		return TRUE;
 	}
 	}
 	return FALSE;
@@ -985,7 +991,28 @@ INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 	}
 	case WM_USER_REFRESH_LIST:
 	{
-		DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEPROCESS), hDlg, DlgProc_Process);
+		if (isProcessExist)
+		{
+			return 0; 
+		}
+		SetTimer(hDlg, TIMER_REFRESH_DEBOUNCE, 500, NULL);
+		return 0;
+	}
+
+	case WM_TIMER:
+	{
+		if (wParam == TIMER_REFRESH_DEBOUNCE)
+		{
+			KillTimer(hDlg, TIMER_REFRESH_DEBOUNCE);
+			if (!isProcessExist)
+			{
+				isProcessExist = true;
+				MSG msg;
+				while (PeekMessage(&msg, NULL, WM_USER_REFRESH_LIST, WM_USER_REFRESH_LIST, PM_REMOVE)) {}
+				DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEPROCESS), hDlg, DlgProc_Process);
+				isProcessExist = false;
+			}
+		}
 		return 0;
 	}
 	case WM_USER_UPDATE_LISTVIEW:
@@ -1011,6 +1038,9 @@ INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 		free(szBaseName);
 		return 0;
 	}
+	case WM_USER_STOP_MONITOR:
+		StopFolderMonitor();
+		return 0;
 	case WM_COMMAND:
 	{
 		int WM_ID = LOWORD(wParam);
