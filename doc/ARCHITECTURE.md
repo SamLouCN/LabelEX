@@ -1,5 +1,5 @@
 # ARCHITECTURE
-> Version: 0.0.4(beta) Dev 00013  
+> Version: 0.1.0(beta) Dev 00021  
 > Language: Simplified Chinese
 
 # 技术栈
@@ -9,6 +9,7 @@ GDI+,
 Common Controls
 
 # 总架构图
+### 暂未更新
 <p align="center">
   <img src="../img/architecture.png" alt="architecture" width="500" />
 </p>

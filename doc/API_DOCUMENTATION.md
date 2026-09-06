@@ -1,5 +1,5 @@
 # LabelEX API Documentation
-> Version: 0.0.4(beta) Dev 00013  
+> Version: 0.1.0(beta) Dev 00021  
 > Language: Simplified Chinese
 
 ## Content
@@ -11,17 +11,42 @@
 ## Macro Definitions
 #### main.cpp
 ```cpp
-#define ID_OPEN_YAML 1001							//Menu ID for .Yaml file opening(aborted for now)
+#define ID_OPEN_VIDEO 1001							//Menu ID for video opening
 #define ID_OPEN_FOLDER 1002							//Menu ID for folder opening
-#define ID_CONVERT_VIDEO 1003						//Menu ID for video coverting
-#define ID_EXPORT_CONFIG 2001						//Menu ID for configuration of export
-#define ID_VERSION 3001								//Menu ID for version info
+#define ID_EXPORT_CALI 1003							//Menu ID for Caliberation Dataset exporting
+#define ID_EXPORT_DATASET 1004						//Menu ID for Dataset exporting
+#define ID_CONFIG_EXPORT 2001						//Menu ID for exporting configuration
+#define ID_CONFIG_INTERFACE 2002					//Menu ID for ui configuration
+#define ID_VERSION 3001								//Menu ID for version page
+#define ID_MIT 3002									//Menu ID for license page
 #define WM_USER_REFRESH_LIST (WM_USER + 100)		//Message for a thorough list refresh, when photos are added or removed
 #define WM_USER_UPDATE_ITEM (WM_USER + 101)			//Message for item adding, when txt files are added or removed
 ```
 #### PagePicture.cpp
 ```cpp
-#define IDC_LISTVIEW 5001							//Control ID of listview
+#define WM_USER_REFRESH_LIST (WM_USER + 100)		//Message for a thorough list refresh, when photos are added or removed
+#define WM_USER_UPDATE_ITEM (WM_USER + 101)			//Message for item adding, when txt files are added or removed
+#define WM_USER_STOP_MONITOR (WM_USER + 102)		//Message for stopping folder monitor
+#define WM_USER_START_MONITOR (WM_USER + 103)		//(Aborted) Message for starting folder monitor
+#define WM_USER_UPDATE_LISTVIEW (WM_USER + 200)		//Message for UI updating of IDC_LISTVIEW
+#define WM_USER_UPDATE_PROGRESS (WM_USER + 201) 	//Message for UI updating of IDC_PROGRESS
+#define WM_USER_STOP_MARQUEE (WM_USER + 301)		//Message for stopping MARQUEE of IDC_PROGRESS
+#define TIMER_REFRESH_DEBOUNCE 1001					//Message for time-up of the timer 
+```
+#### PageAbout.cpp
+```cpp
+#define WM_USER_REFRESH_LIST (WM_USER + 100)		//Message for a thorough list refresh, when photos are added or removed
+#define WM_USER_VIDEO_READY (WM_USER + 400)			//Message when a video is accepted by FFmpeg and is ready to convert
+#define WM_USER_START_CONVERT (WM_USER + 401)		//Message when a convertion from video to photoset is starting
+#define WM_USER_CONVERT_PROGRESS (WM_USER + 402)	//Message when a convertion from video to photoset is processing
+#define WM_USER_CONVERT_DONE (WM_USER + 403)		//Message when a convertion from video to photoset is over
+#define WM_USER_STOP_MONITOR (WM_USER + 102)		//Message for stopping folder monitor
+#define WM_USER_START_MONITOR (WM_USER + 103)		//(Aborted) Message for starting folder monitor
+```
+#### PageExport.cpp
+```cpp
+#define WM_USER_UPDATE_PROGRESS (WM_USER + 403)		//Message for UI updating of IDC_VIDEOPROGRESS
+#define WM_USER_BUILD_DONE (WM_USER + 404)			//Message when a Dataset is successfully built
 ```
 
 ## Structs
@@ -30,6 +55,39 @@
 struct BBox {
 	int left, top, right, bottom;	//The basic specs of your drawn rectangle
 	int classId;					//The Class ID of the circled object
+};
+
+struct ImageFileInfo {
+	std::wstring fileName;			//The filename in the IDC_LISTVIEW
+	BOOL status;					//The status in the IDC_LISTVIEW
+};
+```
+#### PageVideo.cpp
+```cpp
+struct ThreadParams
+{
+	std::wstring szVideoPath;		//Video's path
+	std::wstring szImagePath;		//Image's path
+	int format;						//Image's format
+	int fps;						//Frames extracted from video per second
+	int quality;					//Image's quality (when converted to .jpg files)
+	HWND hDlg;						//Parent dialog's handle
+	HWND hPagePicture;				//PagePicture's handle
+};
+```
+#### PageExport.cpp
+```cpp
+struct SplitParams
+{
+	std::vector<std::wstring> imgPaths;			//Image's path (in the current directory)
+	std::vector<std::wstring> labelPaths;		//Label's path (in the current directory)
+	std::wstring trainImgPath;					//paths for images that would be used for training
+	std::wstring valImgPath;					//paths for images that would be used for validation
+	std::wstring trainLabelPath;				//paths for labels that would be used for training
+	std::wstring valLabelPath;					//paths for labels that would be used for validation
+	double ratio;								//ratio of training images/labels
+	HWND hDlg;									//Parent dialog's handle
+	BOOL bType;									//type of the processing
 };
 ```
 
@@ -47,6 +105,7 @@ HWND hPagePicture;							//Picture页面句柄
 ```cpp
 Bitmap* pCurrentImage = nullptr;					//打开的图片句柄
 HWND hImageCtrl = nullptr;							//图片编辑区句柄（Button控件）
+HWND hProgressDlg = nullptr;						//处理窗口句柄
 std::vector<BBox> bboxes;							//矩形集合
 int currentClassId = 0;								//当前的物体的类别
 int selectedIndex = -1;								//选中的矩形索引
@@ -59,6 +118,18 @@ POINT dragStart;									//起始拖拽坐标
 POINT dragOffset;									//拖拽偏移量								
 wchar_t szFolderPath[MAX_PATH] = { 0 };				//当前文件夹目录
 std::wstring currentImagePath;						//当前图片目录
+BOOL isProcessExist = false;						//是否正在处理
+BOOL isPendingRefresh = false;						//处理过程中是否有新的
+```
+#### PageVideo.cpp
+```cpp
+wchar_t szVideoPath[MAX_PATH] = { 0 };				//视频路径
+HWND hVideoProgress = NULL;							//视频处理窗口句柄
+int videoCount;										//视频计数
+```
+#### PageExport.cpp
+```cpp
+HWND hDsProcessDlg;									//数据集处理窗口句柄
 ```
 
 ## Functions
@@ -112,11 +183,18 @@ void DoSelectFolder(HWND hWnd)
 - 简介：调用此函数，打开选择文件夹的窗口
 - 参数：父窗口句柄`hWnd`
 ```cpp
-void RefreshList(HWND hWnd)
+DWORD WINAPI RefreshListThread(LPVOID lpParam)
 ```
-全量刷新列表
-- 简介：加载打开的文件夹内部的图片文件名到列表，并赋予状态
-- 参数：父窗口句柄`hWnd`
+全量刷新列表（文件）
+- 简介：加载文件夹内的图片与标注到`fileList`
+- 参数：父窗口上下文`lpParam`
+- 返回：任何时候都返回`0`
+```cpp
+void RefreshListUI(HWND hList, const std::vector<ImageFileInfo>& fileList)
+```
+全量刷新列表（UI）
+- 简介：将fileList中的图片与标注加载到PICTUREVIEW并更新
+- 参数：LISTVIEW句柄，文件列表`fileList`
 ```cpp
 void UpdateSingleItemStatus(HWND hDlg, LPCWSTR szBaseName, BOOL bExist)
 ```
@@ -207,3 +285,53 @@ Color GetClassColor(int classId)
 - 简介：画笔选择颜色用以绘制不同的类的矩形
 - 参数：类`classId`
 - 返回：颜色类`
+
+#### PageVideo.cpp
+```cpp
+bool SaveFrameAsPNG(AVFrame* pFrameBGR, const wchar_t* filename)
+```
+将帧转换为PNG文件
+- 简介：采用`AV_PIX_FMT_RGB24`编码保存
+- 参数：帧`pFrameBGR`，文件名称`filename`
+- 返回：成功则返回`TRUE`，失败则返回`FALSE`
+```cpp
+bool SaveFrameAsJPEG(AVFrame* pFrame, const wchar_t* filename, int quality)
+```
+将帧转换为JPEG文件
+- 简介：采用`AV_PIX_FMT_YUVJ420P`编码保存
+- 参数：帧`pFrame`，文件名称`filename`，质量`quality`
+- 返回：成功则返回`TRUE`，失败则返回`FALSE`
+```cpp
+void DoSelectVideo(HWND hWnd)
+```
+通过打开的窗口选择视频，此函数来自Win32 SDK
+- 简介：调用此函数，打开选择视频的窗口
+- 参数：父窗口句柄`hWnd`
+```cpp
+void DoSelectImageFolder(HWND hWnd)
+```
+通过打开的窗口选择图片集文件夹，此函数来自Win32 SDK
+- 简介：调用此函数，打开选择图片的窗口
+- 参数：父窗口句柄`hWnd`
+```cpp
+void DoAnalyseVideo(const wchar_t* szFilePath)
+```
+使用FFmpeg分析视频的信息
+- 简介：通过FFmpeg动态链接库分析视频的格式，分辨率和刷新率，并展示在EDITCONTROL中
+- 参数：文件路径`szFilePath`
+```cpp
+DWORD WINAPI DoConvertVideo(LPVOID lpParam)
+```
+使用FFmpeg将视频帧按照指定帧率抽出并转换为图片
+- 简介：通过FFmpeg动态链接库解析视频，保存指定帧到指定的文件夹
+- 参数：父窗口上下文`lpParam`
+- 返回：任何时候都返回`0`
+
+#### PageExport.cpp
+```cpp
+DWORD WINAPI BuildDataset(LPVOID lpParam)
+```
+将图片与标注文件构成数据集
+- 简介：通过Fisher Yates算法，将图片与数据集按照指定比例分配到不同的数据集文件夹中，构建YOLO格式的数据集
+- 参数：父窗口上下文`lpParam`
+- 返回：任何时候都返回`0`
