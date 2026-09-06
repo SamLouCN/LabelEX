@@ -40,7 +40,6 @@ bool SaveFrameAsPNG(AVFrame* pFrameBGR, const wchar_t* filename)
 	pCodecCtx->width = pFrameBGR->width;
 	pCodecCtx->height = pFrameBGR->height;
 	pCodecCtx->time_base = AVRational{ 1, 25 };
-
 	pCodecCtx->pix_fmt = AV_PIX_FMT_RGB24;
 
 	if (avcodec_open2(pCodecCtx, pCodec, NULL) < 0) {
@@ -49,15 +48,28 @@ bool SaveFrameAsPNG(AVFrame* pFrameBGR, const wchar_t* filename)
 	}
 
 	AVFrame* pFrameRGBA = av_frame_alloc();
+	if (!pFrameRGBA) {
+		avcodec_free_context(&pCodecCtx);
+		return false;
+	}
 	pFrameRGBA->format = pCodecCtx->pix_fmt;
 	pFrameRGBA->width = pCodecCtx->width;
 	pFrameRGBA->height = pCodecCtx->height;
-	av_frame_get_buffer(pFrameRGBA, 32);
+	if (av_frame_get_buffer(pFrameRGBA, 32) < 0) {
+		av_frame_free(&pFrameRGBA);
+		avcodec_free_context(&pCodecCtx);
+		return false;
+	}
 
 	SwsContext* swsCtx = sws_getContext(
 		pFrameBGR->width, pFrameBGR->height, AV_PIX_FMT_BGR24,
 		pCodecCtx->width, pCodecCtx->height, AV_PIX_FMT_RGB24,
 		SWS_LANCZOS, NULL, NULL, NULL);
+	if (!swsCtx) {
+		av_frame_free(&pFrameRGBA);
+		avcodec_free_context(&pCodecCtx);
+		return false;
+	}
 
 	sws_scale(swsCtx, (const uint8_t* const*)pFrameBGR->data, pFrameBGR->linesize,
 		0, pFrameBGR->height, pFrameRGBA->data, pFrameRGBA->linesize);
@@ -69,13 +81,21 @@ bool SaveFrameAsPNG(AVFrame* pFrameBGR, const wchar_t* filename)
 		avcodec_free_context(&pCodecCtx);
 		return false;
 	}
+
 	AVPacket* pPacket = av_packet_alloc();
+	if (!pPacket) {
+		av_frame_free(&pFrameRGBA);
+		avcodec_free_context(&pCodecCtx);
+		return false;
+	}
+
 	if (avcodec_receive_packet(pCodecCtx, pPacket) != 0) {
 		av_packet_free(&pPacket);
 		av_frame_free(&pFrameRGBA);
 		avcodec_free_context(&pCodecCtx);
 		return false;
 	}
+
 	FILE* pFile = _wfopen(filename, L"wb");
 	if (!pFile) {
 		av_packet_free(&pPacket);
@@ -106,7 +126,6 @@ bool SaveFrameAsJPEG(AVFrame* pFrame, const wchar_t* filename, int quality)
 	pCodecCtx->height = pFrame->height;
 	pCodecCtx->pix_fmt = AV_PIX_FMT_YUVJ420P;
 	pCodecCtx->time_base = AVRational{ 1, 25 };
-
 	pCodecCtx->qcompress = (float)quality / 100.0f;
 	pCodecCtx->qmin = 2;
 	pCodecCtx->qmax = 31;
@@ -118,6 +137,10 @@ bool SaveFrameAsJPEG(AVFrame* pFrame, const wchar_t* filename, int quality)
 	}
 
 	AVFrame* pEncodeFrame = av_frame_alloc();
+	if (!pEncodeFrame) {
+		avcodec_free_context(&pCodecCtx);
+		return false;
+	}
 	pEncodeFrame->format = pCodecCtx->pix_fmt;
 	pEncodeFrame->width = pCodecCtx->width;
 	pEncodeFrame->height = pCodecCtx->height;
@@ -131,7 +154,6 @@ bool SaveFrameAsJPEG(AVFrame* pFrame, const wchar_t* filename, int quality)
 		pFrame->width, pFrame->height, AV_PIX_FMT_BGR24,
 		pCodecCtx->width, pCodecCtx->height, AV_PIX_FMT_YUVJ420P,
 		SWS_LANCZOS, NULL, NULL, NULL);
-
 	if (!swsCtx) {
 		av_frame_free(&pEncodeFrame);
 		avcodec_free_context(&pCodecCtx);
@@ -150,6 +172,12 @@ bool SaveFrameAsJPEG(AVFrame* pFrame, const wchar_t* filename, int quality)
 	}
 
 	AVPacket* pPacket = av_packet_alloc();
+	if (!pPacket) {
+		av_frame_free(&pEncodeFrame);
+		avcodec_free_context(&pCodecCtx);
+		return false;
+	}
+
 	if (avcodec_receive_packet(pCodecCtx, pPacket) != 0) {
 		av_packet_free(&pPacket);
 		av_frame_free(&pEncodeFrame);
@@ -309,14 +337,25 @@ DWORD WINAPI DoConvertVideo(LPVOID lpParam)
 {
 	ThreadParams* params = (ThreadParams*)lpParam;
 
+	AVFormatContext* pFormatContext = NULL;
+	AVCodecContext* pCodecCtx = NULL;
+	AVFrame* pFrame = NULL;
+	AVPacket* pPacket = NULL;
+	SwsContext* swsCtx = NULL;
+	AVFrame* pFrameBGR = NULL;
+	uint8_t* buffer = NULL;
+
+	std::string utf8Path;
+
 	if (params->szVideoPath.empty())
 	{
-		return 0;
+		goto cleanup;
 	}
+
 	int size_needed = WideCharToMultiByte(CP_UTF8, 0, params->szVideoPath.c_str(), -1, NULL, 0, NULL, NULL);
 	if (size_needed == 0)
 	{
-		return 0;
+		goto cleanup;
 	}
 
 	wchar_t szCopy[MAX_PATH];
@@ -326,20 +365,21 @@ DWORD WINAPI DoConvertVideo(LPVOID lpParam)
 	StringCchCopy(szBaseName, MAX_PATH, pszName);
 	PathRemoveExtension(szBaseName);
 
-	std::string utf8Path(size_needed, 0);
+	utf8Path.resize(size_needed);
 	WideCharToMultiByte(CP_UTF8, 0, params->szVideoPath.c_str(), -1, &utf8Path[0], size_needed, NULL, NULL);
-	AVFormatContext* pFormatContext = avformat_alloc_context();
+
+	pFormatContext = avformat_alloc_context();
 	if (avformat_open_input(&pFormatContext, utf8Path.c_str(), NULL, NULL) != 0)
 	{
 		MessageBox(NULL, L"FFmpeg failed to open the video", L"Error", NULL);
-		return 0;
+		goto cleanup;
 	}
 	if (avformat_find_stream_info(pFormatContext, NULL) < 0)
 	{
 		MessageBox(NULL, L"FFmpeg failed to find stream info", L"Error", NULL);
-		avformat_close_input(&pFormatContext);
-		return 0;
+		goto cleanup;
 	}
+
 	int videoStreamIndex = -1;
 	for (int i = 0; i < pFormatContext->nb_streams; ++i)
 	{
@@ -352,29 +392,64 @@ DWORD WINAPI DoConvertVideo(LPVOID lpParam)
 	if (videoStreamIndex == -1)
 	{
 		MessageBox(NULL, L"FFmpeg failed to find stream", L"Error", NULL);
-		avformat_close_input(&pFormatContext);
-		return 0;
+		goto cleanup;
 	}
+
 	AVStream* videoStream = pFormatContext->streams[videoStreamIndex];
 	AVCodecParameters* pCodecParams = videoStream->codecpar;
 	const AVCodec* pCodec = avcodec_find_decoder(pCodecParams->codec_id);
-	AVCodecContext* pCodecCtx = avcodec_alloc_context3(pCodec);
-	avcodec_parameters_to_context(pCodecCtx, pCodecParams);
-	avcodec_open2(pCodecCtx, pCodec, NULL);
+	if (!pCodec)
+	{
+		MessageBox(NULL, L"Codec not found", L"Error", NULL);
+		goto cleanup;
+	}
 
-	AVFrame* pFrame = av_frame_alloc();
-	AVPacket* pPacket = av_packet_alloc();
+	pCodecCtx = avcodec_alloc_context3(pCodec);
+	if (!pCodecCtx)
+	{
+		MessageBox(NULL, L"Failed to allocate codec context", L"Error", NULL);
+		goto cleanup;
+	}
+	if (avcodec_parameters_to_context(pCodecCtx, pCodecParams) < 0 ||
+		avcodec_open2(pCodecCtx, pCodec, NULL) < 0)
+	{
+		MessageBox(NULL, L"Failed to open codec", L"Error", NULL);
+		goto cleanup;
+	}
 
-	struct SwsContext* swsCtx = sws_getContext(
-		pCodecCtx->width, pCodecCtx->height, pCodecCtx->pix_fmt, 
-		pCodecCtx->width, pCodecCtx->height, AV_PIX_FMT_BGR24, SWS_LANCZOS, NULL, NULL, NULL
-	);
+	pFrame = av_frame_alloc();
+	pPacket = av_packet_alloc();
+	if (!pFrame || !pPacket)
+	{
+		MessageBox(NULL, L"Failed to allocate frame/packet", L"Error", NULL);
+		goto cleanup;
+	}
 
-	AVFrame* pFrameBGR = av_frame_alloc();
+	swsCtx = sws_getContext(
+		pCodecCtx->width, pCodecCtx->height, pCodecCtx->pix_fmt,
+		pCodecCtx->width, pCodecCtx->height, AV_PIX_FMT_BGR24,
+		SWS_LANCZOS, NULL, NULL, NULL);
+	if (!swsCtx)
+	{
+		MessageBox(NULL, L"Failed to create sws context", L"Error", NULL);
+		goto cleanup;
+	}
+
+	pFrameBGR = av_frame_alloc();
+	if (!pFrameBGR)
+	{
+		MessageBox(NULL, L"Failed to allocate BGR frame", L"Error", NULL);
+		goto cleanup;
+	}
 	int numBytes = av_image_get_buffer_size(AV_PIX_FMT_BGR24, pCodecCtx->width, pCodecCtx->height, 1);
-	uint8_t* buffer = (uint8_t*)av_malloc(numBytes * sizeof(uint8_t));
-	av_image_fill_arrays(pFrameBGR->data, pFrameBGR->linesize, buffer, AV_PIX_FMT_BGR24, pCodecCtx->width, pCodecCtx->height, 1);
-
+	buffer = (uint8_t*)av_malloc(numBytes * sizeof(uint8_t));
+	if (!buffer)
+	{
+		MessageBox(NULL, L"Failed to allocate buffer", L"Error", NULL);
+		goto cleanup;
+	}
+	av_image_fill_arrays(pFrameBGR->data, pFrameBGR->linesize, buffer, AV_PIX_FMT_BGR24,
+		pCodecCtx->width, pCodecCtx->height, 1);
 	pFrameBGR->width = pCodecCtx->width;
 	pFrameBGR->height = pCodecCtx->height;
 	pFrameBGR->format = AV_PIX_FMT_BGR24;
@@ -394,6 +469,8 @@ DWORD WINAPI DoConvertVideo(LPVOID lpParam)
 			{
 				while (avcodec_receive_frame(pCodecCtx, pFrame) == 0)
 				{
+					frameCount++;
+
 					double currentTime = 0.0;
 					if (pFrame->pts != AV_NOPTS_VALUE)
 					{
@@ -403,43 +480,47 @@ DWORD WINAPI DoConvertVideo(LPVOID lpParam)
 					{
 						currentTime = (double)frameCount / (double)params->fps;
 					}
+
 					if (currentTime >= nextSaveTime)
 					{
-						sws_scale(swsCtx, (const uint8_t* const*)pFrame->data, pFrame->linesize, 0, pCodecCtx->height, pFrameBGR->data, pFrameBGR->linesize);
+						sws_scale(swsCtx, (const uint8_t* const*)pFrame->data, pFrame->linesize,
+							0, pCodecCtx->height, pFrameBGR->data, pFrameBGR->linesize);
+
 						wchar_t outPath[MAX_PATH];
 						if (params->format == 0)
 						{
 							swprintf_s(outPath, L"%ws\\%ws_%05d.png", params->szImagePath.c_str(), szBaseName, imageCount);
 							SaveFrameAsPNG(pFrameBGR, outPath);
-							imageCount++;
 						}
 						else if (params->format == 1)
 						{
 							swprintf_s(outPath, L"%ws\\%ws_%05d.jpg", params->szImagePath.c_str(), szBaseName, imageCount);
 							SaveFrameAsJPEG(pFrameBGR, outPath, params->quality);
-							imageCount++;
 						}
+						imageCount++;
 						nextSaveTime += interval;
 					}
+
 					int progress = (int)((currentTime / totalDurationSec) * 100);
-					if (progress > 100)
-					{
-						progress = 100;
-					}
+					if (progress > 100) progress = 100;
 					PostMessage(params->hDlg, WM_USER_CONVERT_PROGRESS, progress, 0);
+
 					av_frame_unref(pFrame);
 				}
 			}
 		}
 		av_packet_unref(pPacket);
 	}
-	av_frame_free(&pFrame);
-	av_frame_free(&pFrameBGR);
-	av_packet_free(&pPacket);
-	avcodec_free_context(&pCodecCtx);
-	sws_freeContext(swsCtx);
-	av_free(buffer);
-	avformat_close_input(&pFormatContext);
+
+cleanup:
+	if (pFrame) av_frame_free(&pFrame);
+	if (pFrameBGR) av_frame_free(&pFrameBGR);
+	if (pPacket) av_packet_free(&pPacket);
+	if (pCodecCtx) avcodec_free_context(&pCodecCtx);
+	if (swsCtx) sws_freeContext(swsCtx);
+	if (buffer) av_free(buffer);
+	if (pFormatContext) avformat_close_input(&pFormatContext);
+
 	PostMessage(params->hDlg, WM_USER_CONVERT_DONE, 0, 0);
 	delete params;
 	return 0;
@@ -513,6 +594,7 @@ INT_PTR CALLBACK DlgProc_VideoProgress(HWND hDlg, UINT message, WPARAM wParam, L
 
 INT_PTR CALLBACK DlgProc_Video(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	static HFONT hFont = NULL;
 	switch (message)
 	{
 	case WM_INITDIALOG:
@@ -554,7 +636,13 @@ INT_PTR CALLBACK DlgProc_Video(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		UINT seventhRowTop = 21 * margin;
 		UINT eighthRowTop = 24 * margin;
 
-		HFONT hFont = CreateFont(fontHeight, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
+		if (hFont)
+		{
+			DeleteObject(hFont);
+			hFont = NULL;
+		}
+
+		hFont = CreateFont(fontHeight, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
 			DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
 			CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Microsoft Yahei UI"));
 
@@ -578,7 +666,6 @@ INT_PTR CALLBACK DlgProc_Video(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		SetWindowPos(GetDlgItem(hDlg, IDC_ST_EXPORT_FPS), NULL, thirdColumnLeft, seventhRowTop, 11 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
 		SetWindowPos(GetDlgItem(hDlg, IDC_EXPORT_FPS), NULL, thirdColumnLeft + 11 * margin, seventhRowTop - 2 * minLen, 6 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
 		SetWindowPos(GetDlgItem(hDlg, IDC_EXPORT), NULL, rcDlg.right - 9 * margin, eighthRowTop, 7 * margin, 3 * margin, SWP_NOZORDER);
-		SetWindowPos(GetDlgItem(hDlg, IDC_EXPORT_CALI), NULL, firstColumnLeft, eighthRowTop, 11 * margin, 3 * margin, SWP_NOZORDER);
 
 		SendMessage(GetDlgItem(hDlg, IDC_ST_SOURCE), WM_SETFONT, (WPARAM)hFont, TRUE);
 		SendMessage(GetDlgItem(hDlg, IDC_ST_SOURCE_INFO), WM_SETFONT, (WPARAM)hFont, TRUE);
@@ -660,6 +747,15 @@ INT_PTR CALLBACK DlgProc_Video(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	case WM_CLOSE:
 	{
 		DestroyWindow(hDlg);
+		return TRUE;
+	}
+	case WM_DESTROY:
+	{
+		if (hFont)
+		{
+			DeleteObject(hFont);
+			hFont = NULL;
+		}
 		return TRUE;
 	}
 	}

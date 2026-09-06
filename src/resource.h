@@ -101,7 +101,6 @@
 #define IDC_ST_EXPORT_FPS				3019
 #define IDC_EXPORT_FPS					3020
 #define IDC_EXPORT						3021
-#define IDC_EXPORT_CALI					3022
 #define IDC_PROGRESS					4001
 #define IDC_SELECT_DATASET				5002
 #define IDC_ST_TRAIN_PERCENT			5004

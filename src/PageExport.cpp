@@ -163,7 +163,7 @@ INT_PTR CALLBACK DlgProc_Cali(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 	{
 	case WM_INITDIALOG:
 	{
-		SetWindowText(hDlg, L"导出校验集");
+		SetWindowText(hDlg, L"导出校准集");
 		HICON hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_MAIN_ICON));
 		SendMessage(hDlg, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
 		PostMessage(hDlg, WM_SIZE, 0, 0);
@@ -230,6 +230,7 @@ INT_PTR CALLBACK DlgProc_Cali(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 
 INT_PTR CALLBACK DlgProc_Dataset(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	static HFONT hFont;
 	switch (message)
 	{
 	case WM_INITDIALOG:
@@ -238,6 +239,7 @@ INT_PTR CALLBACK DlgProc_Dataset(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 		HICON hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_MAIN_ICON));
 		SendMessage(hDlg, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
 		PostMessage(hDlg, WM_SIZE, 0, 0);
+		SetDlgItemInt(hDlg, IDC_TRAIN_PERCENT, 80, FALSE);
 		return TRUE;
 	}
 	case WM_SIZE:
@@ -262,7 +264,13 @@ INT_PTR CALLBACK DlgProc_Dataset(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 		UINT ninthRowTop = 26 * margin;
 		UINT tenthRowTop = 29 * margin;
 
-		HFONT hFont = CreateFont(fontHeight, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
+		if (hFont)
+		{
+			DeleteObject(hFont);
+			hFont = NULL;
+		}
+
+		hFont = CreateFont(fontHeight, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
 			DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
 			CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Microsoft Yahei UI"));
 
@@ -360,6 +368,15 @@ INT_PTR CALLBACK DlgProc_Dataset(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 			DialogBoxParam(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEVIDEOPROGRESS), hDlg, DlgProc_DatasetProcess, (LPARAM)params);
 			return TRUE;
 		}
+		}
+		return TRUE;
+	}
+	case WM_DESTROY:
+	{
+		if (hFont)
+		{
+			DeleteObject(hFont);
+			hFont = NULL;
 		}
 		return TRUE;
 	}

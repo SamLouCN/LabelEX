@@ -579,6 +579,9 @@ LRESULT CALLBACK PicSubclassProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 		}
 		BitBlt(hdc, rcClient.left, rcClient.top, w, h, hdcMem, 0, 0, SRCCOPY);
 
+		SelectObject(hdcMem, hOldFont);
+		DeleteObject(hFont);
+
 		SelectObject(hdcMem, hbmOld);
 		DeleteObject(hbmMem);
 		DeleteDC(hdcMem);
@@ -992,6 +995,7 @@ INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 	{
 		if (isProcessExist)
 		{
+			isPendingRefresh = TRUE;
 			return 0; 
 		}
 		SetTimer(hDlg, TIMER_REFRESH_DEBOUNCE, 500, NULL);
@@ -1022,6 +1026,11 @@ INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 			HWND hList = GetDlgItem(hDlg, IDC_LISTVIEW);
 			RefreshListUI(hList, *pData);
 			delete pData;
+			if (isPendingRefresh)
+			{
+				isPendingRefresh = FALSE;
+				PostMessage(hDlg, WM_USER_REFRESH_LIST, 0, 0);
+			}
 			if (hProgressDlg)
 			{
 				PostMessage(hProgressDlg, WM_USER_STOP_MARQUEE, 0, 0);

@@ -44,7 +44,7 @@ HWND DoCreateMenu(HWND hWnd)
 	AppendMenu(hSubMenuFile, MF_STRING, ID_OPEN_VIDEO, L"打开视频");
 	AppendMenu(hSubMenuFile, MF_STRING, ID_OPEN_FOLDER, L"打开文件夹");
 	AppendMenu(hSubMenuFile, MF_SEPARATOR, 0, NULL);
-	AppendMenu(hSubMenuFile, MF_STRING, ID_EXPORT_CALI, L"导出校验集");
+	AppendMenu(hSubMenuFile, MF_STRING, ID_EXPORT_CALI, L"导出校准集");
 	AppendMenu(hSubMenuFile, MF_STRING, ID_EXPORT_DATASET, L"导出数据集");
 	AppendMenu(hSubMenuOption, MF_STRING, ID_CONFIG_EXPORT, L"导出设置（功能测试中）");
 	AppendMenu(hSubMenuOption, MF_STRING, ID_CONFIG_INTERFACE, L"界面设置（功能测试中）");
@@ -306,6 +306,9 @@ int WINAPI wWinMain(
 			continue;
 		}
 		if (hAccel && TranslateAccelerator(hWnd, hAccel, &msg))
+		{
+			continue;
+		}
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}
@@ -328,6 +331,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 		case ID_VERSION:
 		{
+			if (hPageAbout && IsWindow(hPageAbout))
+			{
+				SetForegroundWindow(hPageAbout);
+				return 0;
+			}
 			hPageAbout = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEABOUT), hWnd, DlgProc_About);
 			RECT rcParent;
 			GetWindowRect(hWnd, &rcParent);
@@ -341,6 +349,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 		case ID_MIT:
 		{
+			if (hPageMit && IsWindow(hPageMit))
+			{
+				SetForegroundWindow(hPageMit);
+				return 0;
+			}
 			hPageMit = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEMIT), hWnd, DlgProc_Mit);
 			RECT rcParent;
 			GetWindowRect(hWnd, &rcParent);
@@ -359,6 +372,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 		case ID_OPEN_VIDEO:
 		{
+			if (hPageVideo && IsWindow(hPageVideo))
+			{
+				SetForegroundWindow(hPageVideo);
+				return 0;
+			}
 			hPageVideo = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEVIDEO), hWnd, DlgProc_Video);
 			RECT rcParent;
 			GetWindowRect(hWnd, &rcParent);
@@ -372,6 +390,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 		case ID_EXPORT_CALI:
 		{
+			if (hPageCali && IsWindow(hPageCali))
+			{
+				SetForegroundWindow(hPageCali);
+				return 0;
+			}
 			hPageCali = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGECALI), hWnd, DlgProc_Cali);
 			RECT rcParent;
 			GetWindowRect(hWnd, &rcParent);
@@ -385,6 +408,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 		case ID_EXPORT_DATASET:
 		{
+			if (hPageDataset && IsWindow(hPageDataset))
+			{
+				SetForegroundWindow(hPageDataset);
+				return 0;
+			}
 			hPageDataset = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEDATASET), hWnd, DlgProc_Dataset);
 			RECT rcParent;
 			GetWindowRect(hWnd, &rcParent);
@@ -398,6 +426,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 		case ID_CONFIG_EXPORT:
 		{
+			if (hPageExportCfg && IsWindow(hPageExportCfg))
+			{
+				SetForegroundWindow(hPageExportCfg);
+				return 0;
+			}
 			hPageExportCfg = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEEXPORTCFG), hWnd, DlgProc_ExportCfg);
 			RECT rcParent;
 			GetWindowRect(hWnd, &rcParent);
@@ -411,6 +444,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 		case ID_CONFIG_INTERFACE:
 		{
+			if (hPageInterfaceCfg && IsWindow(hPageInterfaceCfg))
+			{
+				SetForegroundWindow(hPageInterfaceCfg);
+				return 0;
+			}
 			hPageInterfaceCfg = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEINTERFACECFG), hWnd, DlgProc_InterfaceCfg);
 			RECT rcParent;
 			GetWindowRect(hWnd, &rcParent);
