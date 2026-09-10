@@ -72,6 +72,7 @@
 #define IDC_SWITCH_CLASS7				1058
 #define IDC_SWITCH_CLASS8				1059
 #define IDC_SWITCH_CLASS9				1060
+#define IDC_SWITCH_NEXT					1061
 #define IDC_PICTURE_SL					2001
 #define IDC_ST_NAME						2002
 #define IDC_ST_VERSION					2003

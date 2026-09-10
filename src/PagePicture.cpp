@@ -1055,6 +1055,7 @@ INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 		int WM_CODE = HIWORD(wParam);
 		switch (WM_ID)
 		{
+		case IDC_SWITCH_NEXT:
 		case IDC_OK:
 		{
 			if (!pCurrentImage)
