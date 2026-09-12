@@ -9,3 +9,4 @@ RD*
 *.tmp
 CMakeSettings.json
 res/winres.h
+release/
