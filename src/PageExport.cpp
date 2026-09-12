@@ -75,7 +75,7 @@ DWORD WINAPI BuildDataset(LPVOID lpParam)
 
 		if (params->bType == 0)
 		{
-			MoveFileExW(srcImg.c_str(), destImg.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_COPY_ALLOWED);
+			CopyFileW(srcImg.c_str(), destImg.c_str(), FALSE);
 		}
 		else
 		{
