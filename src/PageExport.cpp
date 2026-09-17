@@ -167,7 +167,7 @@ INT_PTR CALLBACK DlgProc_Cali(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 		HICON hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_MAIN_ICON));
 		SendMessage(hDlg, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
 		PostMessage(hDlg, WM_SIZE, 0, 0);
-		SetDlgItemInt(hDlg, IDC_CALI_PERCENT, 10, FALSE);
+		SetDlgItemInt(hDlg, IDC_CALI_PERCENT, 2, FALSE);
 		return TRUE;
 	}
 	case WM_SIZE:
@@ -199,7 +199,7 @@ INT_PTR CALLBACK DlgProc_Cali(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 			SplitParams* params = new SplitParams();
 			params->bType = 0;
 			int ratioInt = GetDlgItemInt(hDlg, IDC_CALI_PERCENT, NULL, FALSE);
-			params->ratio = (ratioInt > 0 && ratioInt <= 100) ? (double)ratioInt / 100.0 : 0.1;
+			params->ratio = (ratioInt > 0 && ratioInt <= 100) ? (double)ratioInt / 100.0 : 0.02;
 
 			wchar_t szName[MAX_PATH];
 			for (int i = 0; i < listCount; ++i)

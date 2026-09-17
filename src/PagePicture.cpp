@@ -372,7 +372,7 @@ RECT ImageToControl(const BBox& box)
 
 void DrawHandles(Graphics& graphics, const RECT& rc)
 {
-	int handleSize = 8;
+	int handleSize = IDCForDpi(hPagePicture, 8);
 	SolidBrush brush(Color(255, 255, 255, 255));
 	Pen pen(Color(255, 0, 0, 0));
 	POINT pts[8] = {
@@ -420,7 +420,7 @@ int HitTestHandle(HWND hWnd, POINT ptCtrl)
 		{ rc.left, rc.bottom },
 		{ rc.left, (rc.top + rc.bottom) / 2 }
 	};
-	int handleSize = 8;
+	int handleSize = IDCForDpi(hPagePicture, 8);
 	for (int i = 0; i < 8; ++i)
 	{
 		RECT hr = { pts[i].x - handleSize / 2, pts[i].y - handleSize / 2,
@@ -561,6 +561,7 @@ LRESULT CALLBACK PicSubclassProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 			DrawText(hdcMem, L"从列表中单击选择一张图片", -1, &rcClient, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 		}
 		{
+			threshold = IDCForDpi(hPagePicture, 4);
 			Graphics graphics(hdcMem);
 			Pen pen(Color(255, 59, 48, 0), threshold);
 			for (size_t i = 0; i < bboxes.size(); ++i) 
@@ -730,7 +731,7 @@ LRESULT CALLBACK PicSubclassProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 			POINT ptCtrl = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
 			POINT ptImg = ControlToImage(ptCtrl);
 			BBox& box = bboxes[selectedIndex];
-			int minSize = int(min(pCurrentImage->GetHeight(), pCurrentImage->GetWidth()) / 30);
+			int minSize = int(min(pCurrentImage->GetHeight(), pCurrentImage->GetWidth()) / 50);
 			switch (resizeHandle)
 			{
 			case 0: 
@@ -797,7 +798,7 @@ LRESULT CALLBACK PicSubclassProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 			box.right = ptImg.x;
 			box.bottom = ptImg.y;
 			
-			int minSize = int(min(pCurrentImage->GetHeight(), pCurrentImage->GetWidth()) / 30);
+			int minSize = int(min(pCurrentImage->GetHeight(), pCurrentImage->GetWidth()) / 50);
 			if (box.right - box.left < minSize)
 			{
 				box.right = box.left + minSize;
@@ -816,12 +817,13 @@ LRESULT CALLBACK PicSubclassProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 		if (dragMode == Creating && selectedIndex != -1)
 		{
 			BBox& box = bboxes[selectedIndex];
-			if ((box.right - box.left) < 2 || (box.bottom - box.top) < 2)
+			if ((box.right - box.left) < 3 || (box.bottom - box.top) < 3)
 			{
 				bboxes.erase(bboxes.begin() + selectedIndex);
+				selectedIndex = -1;
 			}
-			selectedIndex = -1;
 			dragMode = None;
+			SetFocus(hWnd);
 			ReleaseCapture();
 			InvalidateRect(hWnd, NULL, FALSE);
 			return 0;
