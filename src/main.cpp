@@ -9,10 +9,14 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #define ID_OPEN_FOLDER 1002
 #define ID_EXPORT_CALI 1003
 #define ID_EXPORT_DATASET 1004
-#define ID_CONFIG_EXPORT 2001
-#define ID_CONFIG_INTERFACE 2002
-#define ID_VERSION 3001
-#define ID_MIT 3002
+#define ID_UNDO 2001
+#define ID_REDO 2002
+#define ID_DELETE_PHOTO 2003
+#define ID_HISTORY 2004
+#define ID_CONFIG_EXPORT 3001
+#define ID_CONFIG_INTERFACE 3002
+#define ID_VERSION 4001
+#define ID_MIT 4002
 #define WM_USER_REFRESH_LIST (WM_USER + 100)
 #define WM_USER_UPDATE_ITEM (WM_USER + 101)
 
@@ -38,6 +42,7 @@ HWND DoCreateMenu(HWND hWnd)
 {
 	HMENU hMenu = CreateMenu();
 	HMENU hSubMenuFile = CreatePopupMenu();
+	HMENU hSubMenuEdit = CreatePopupMenu();
 	HMENU hSubMenuOption = CreatePopupMenu();
 	HMENU hSubMenuAbout = CreatePopupMenu();
 
@@ -46,12 +51,18 @@ HWND DoCreateMenu(HWND hWnd)
 	AppendMenu(hSubMenuFile, MF_SEPARATOR, 0, NULL);
 	AppendMenu(hSubMenuFile, MF_STRING, ID_EXPORT_CALI, L"导出校准集");
 	AppendMenu(hSubMenuFile, MF_STRING, ID_EXPORT_DATASET, L"导出数据集");
+	AppendMenu(hSubMenuEdit, MF_STRING, ID_UNDO, L"撤销");
+	AppendMenu(hSubMenuEdit, MF_STRING, ID_REDO, L"重做");
+	AppendMenu(hSubMenuEdit, MF_STRING, ID_DELETE_PHOTO, L"删除此图片");
+	AppendMenu(hSubMenuEdit, MF_SEPARATOR, 0, NULL);
+	AppendMenu(hSubMenuEdit, MF_STRING, ID_HISTORY, L"编辑历史");
 	AppendMenu(hSubMenuOption, MF_STRING, ID_CONFIG_EXPORT, L"导出设置（功能测试中）");
 	AppendMenu(hSubMenuOption, MF_STRING, ID_CONFIG_INTERFACE, L"界面设置（功能测试中）");
 	AppendMenu(hSubMenuAbout, MF_STRING, ID_VERSION, L"版本");
 	AppendMenu(hSubMenuAbout, MF_STRING, ID_MIT, L"许可证");
 
 	AppendMenu(hMenu, MF_STRING | MF_POPUP, (UINT_PTR)hSubMenuFile, L"文件(&L)");
+	AppendMenu(hMenu, MF_STRING | MF_POPUP, (UINT_PTR)hSubMenuEdit, L"编辑(&E)");
 	AppendMenu(hMenu, MF_STRING | MF_POPUP, (UINT_PTR)hSubMenuOption, L"选项(&O)");
 	AppendMenu(hMenu, MF_STRING | MF_POPUP, (UINT_PTR)hSubMenuAbout, L"关于(&A)");
 	SetMenu(hWnd, hMenu);
@@ -339,8 +350,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			hPageAbout = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEABOUT), hWnd, DlgProc_About);
 			RECT rcParent;
 			GetWindowRect(hWnd, &rcParent);
-			int dialogWidth = IDCForDpi(hPageAbout, 300);
-			int dialogHeight = IDCForDpi(hPageAbout, 280);
+			int dialogWidth = IDCForDpi(hPageAbout, 500);
+			int dialogHeight = IDCForDpi(hPageAbout, 400);
 			int x = rcParent.left + (rcParent.right - rcParent.left - dialogWidth) / 2;
 			int y = rcParent.top + (rcParent.bottom - rcParent.top - dialogHeight) / 2;
 			SetWindowPos(hPageAbout, NULL, x, y, dialogWidth, dialogHeight, SWP_NOZORDER);

@@ -23,13 +23,13 @@ INT_PTR CALLBACK DlgProc_About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		GetClientRect(hDlg, &rcDlg);
 		UINT margin = IDCForDpi(hDlg, 10);
 		UINT minLen = IDCForDpi(hDlg, 1);
-		SetWindowPos(GetDlgItem(hDlg, IDC_PICTURE_SL), NULL, rcDlg.left + margin, rcDlg.top + margin, rcDlg.right - rcDlg.left - 2 * margin, 8 * margin + 5 * minLen, SWP_NOZORDER);
-		SetWindowPos(GetDlgItem(hDlg, IDC_ST_NAME), NULL, rcDlg.left + margin, rcDlg.top + 10 * margin, rcDlg.right - rcDlg.left - 2 * margin, 2 * margin, SWP_NOZORDER);
-		SetWindowPos(GetDlgItem(hDlg, IDC_ST_VERSION), NULL, rcDlg.left + margin, rcDlg.top + 12 * margin, rcDlg.right - rcDlg.left - 2 * margin, 2 * margin, SWP_NOZORDER);
-		SetWindowPos(GetDlgItem(hDlg, IDC_ST_COPYRIGHT), NULL, rcDlg.left + margin, rcDlg.top + 14 * margin, rcDlg.right - rcDlg.left - 2 * margin, 2 * margin, SWP_NOZORDER);
-		SetWindowPos(GetDlgItem(hDlg, IDC_ST_ANNOUNCE), NULL, rcDlg.left + margin, rcDlg.top + 16 * margin, rcDlg.right - rcDlg.left - 2 * margin, 2 * margin, SWP_NOZORDER);
-		SetWindowPos(GetDlgItem(hDlg, IDC_ST_FFMPEG), NULL, rcDlg.left + margin, rcDlg.top + 18 * margin, rcDlg.right - rcDlg.left - 2 * margin, 2 * margin, SWP_NOZORDER);
-		SetWindowPos(GetDlgItem(hDlg, IDC_OK), NULL, (rcDlg.right - rcDlg.left) / 2 - 5 * margin, rcDlg.top + 20 * margin, 10 * margin, 3 * margin, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_PICTURE_SL), NULL, rcDlg.left + margin, rcDlg.top + margin, 12 * margin, rcDlg.bottom - rcDlg.top - 2 * margin, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_ST_NAME), NULL, rcDlg.left + 15 * margin, rcDlg.top + 7 * margin, rcDlg.right - rcDlg.left - 2 * margin, 2 * margin, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_ST_VERSION), NULL, rcDlg.left + 15 * margin, rcDlg.top + 9 * margin, rcDlg.right - rcDlg.left - 2 * margin, 2 * margin, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_ST_COPYRIGHT), NULL, rcDlg.left + 15 * margin, rcDlg.top + 11 * margin, rcDlg.right - rcDlg.left - 2 * margin, 2 * margin, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_ST_ANNOUNCE), NULL, rcDlg.left + 15 * margin, rcDlg.top + 13 * margin, rcDlg.right - rcDlg.left - 2 * margin, 2 * margin, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_ST_FFMPEG), NULL, rcDlg.left + 15 * margin, rcDlg.top + 15 * margin, rcDlg.right - rcDlg.left - 2 * margin, 2 * margin, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_OK), NULL, rcDlg.right - 12 * margin, rcDlg.bottom - 4 * margin, 11 * margin, 3 * margin, SWP_NOZORDER);
 		return TRUE;
 	}
 	case WM_COMMAND:

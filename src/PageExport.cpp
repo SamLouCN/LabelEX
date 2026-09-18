@@ -13,14 +13,18 @@ struct SplitParams
 	std::vector<std::wstring> labelPaths;
 	std::wstring trainImgPath;
 	std::wstring valImgPath;
+	std::wstring testImgPath;
 	std::wstring trainLabelPath;
 	std::wstring valLabelPath;
-	double ratio;
+	std::wstring testLabelPath;
+	double ratioTrain;
+	double ratioVal;
 	HWND hDlg;
 	BOOL bType;
 };
 
 HWND hDsProcessDlg;
+BOOL isChanged = FALSE;
 
 DWORD WINAPI BuildDataset(LPVOID lpParam)
 {
@@ -38,21 +42,30 @@ DWORD WINAPI BuildDataset(LPVOID lpParam)
 
 	std::random_device rd;
 	std::mt19937 gen(rd());
-	int k = (int)(total * params->ratio);
-	if (k > total) k = total;
 
-	for (int i = 0; i < k; ++i)
+	int kTrain = (int)(total * params->ratioTrain);
+	if (kTrain < 0) kTrain = 0;
+	if (kTrain > total) kTrain = total;
+
+	int kVal = (int)(total * params->ratioVal);
+	if (kVal < 0) kVal = 0;
+	if (kTrain + kVal > total) kVal = total - kTrain;
+	int kSplit = kTrain + kVal;
+
+	for (int i = 0; i < kSplit; ++i)
 	{
 		std::uniform_int_distribution<> dis(i, total - 1);
 		std::swap(indices[i], indices[dis(gen)]);
 	}
 
 	SHCreateDirectoryExW(NULL, params->trainImgPath.c_str(), NULL);
-	if (params->bType == 1) 
+	if (params->bType == 1)
 	{
 		SHCreateDirectoryExW(NULL, params->valImgPath.c_str(), NULL);
+		SHCreateDirectoryExW(NULL, params->testImgPath.c_str(), NULL);
 		SHCreateDirectoryExW(NULL, params->trainLabelPath.c_str(), NULL);
 		SHCreateDirectoryExW(NULL, params->valLabelPath.c_str(), NULL);
+		SHCreateDirectoryExW(NULL, params->testLabelPath.c_str(), NULL);
 	}
 
 	for (int i = 0; i < total; ++i)
@@ -61,36 +74,46 @@ DWORD WINAPI BuildDataset(LPVOID lpParam)
 		LPCWSTR imgName = PathFindFileName(srcImg.c_str());
 
 		std::wstring destImg;
-		if (i < k)
+		std::wstring destLabel;
+
+		if (i < kTrain)
 		{
 			destImg = params->trainImgPath + L"\\" + imgName;
+			if (params->bType == 1)
+			{
+				LPCWSTR labelName = PathFindFileName(params->labelPaths[indices[i]].c_str());
+				destLabel = params->trainLabelPath + L"\\" + labelName;
+			}
+		}
+		else if (i < kSplit)
+		{
+			destImg = params->valImgPath + L"\\" + imgName;
+			if (params->bType == 1)
+			{
+				LPCWSTR labelName = PathFindFileName(params->labelPaths[indices[i]].c_str());
+				destLabel = params->valLabelPath + L"\\" + labelName;
+			}
 		}
 		else
 		{
+			destImg = params->testImgPath + L"\\" + imgName;
 			if (params->bType == 1)
 			{
-				destImg = params->valImgPath + L"\\" + imgName;
+				LPCWSTR labelName = PathFindFileName(params->labelPaths[indices[i]].c_str());
+				destLabel = params->testLabelPath + L"\\" + labelName;
 			}
 		}
 
 		if (params->bType == 0)
 		{
-			CopyFileW(srcImg.c_str(), destImg.c_str(), FALSE);
+			if (i < kTrain)
+			{
+				CopyFileW(srcImg.c_str(), destImg.c_str(), FALSE);
+			}
 		}
 		else
 		{
 			const std::wstring& srcLabel = params->labelPaths[indices[i]];
-			LPCWSTR labelName = PathFindFileName(srcLabel.c_str());
-
-			std::wstring destLabel;
-			if (i < k)
-			{
-				destLabel = params->trainLabelPath + L"\\" + labelName;
-			}
-			else
-			{
-				destLabel = params->valLabelPath + L"\\" + labelName;
-			}
 			CopyFileW(srcImg.c_str(), destImg.c_str(), FALSE);
 			CopyFileW(srcLabel.c_str(), destLabel.c_str(), FALSE);
 		}
@@ -121,12 +144,12 @@ INT_PTR CALLBACK DlgProc_DatasetProcess(HWND hDlg, UINT message, WPARAM wParam, 
 		int y = rcParent.top + (rcParent.bottom - rcParent.top - scaledHeight) / 2;
 		SetWindowPos(hDlg, NULL, x, y, scaledWidth, scaledHeight, SWP_NOZORDER);
 		SplitParams* params = (SplitParams*)lParam;
-		params->hDlg = hDlg;
 		if (!params)
 		{
 			EndDialog(hDlg, IDOK);
 			return TRUE;
 		}
+		params->hDlg = hDlg;
 		HANDLE hThread = CreateThread(NULL, 0, BuildDataset, params, 0, NULL);
 		if (hThread)
 		{
@@ -199,7 +222,8 @@ INT_PTR CALLBACK DlgProc_Cali(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 			SplitParams* params = new SplitParams();
 			params->bType = 0;
 			int ratioInt = GetDlgItemInt(hDlg, IDC_CALI_PERCENT, NULL, FALSE);
-			params->ratio = (ratioInt > 0 && ratioInt <= 100) ? (double)ratioInt / 100.0 : 0.02;
+			params->ratioTrain = (ratioInt > 0 && ratioInt <= 100) ? (double)ratioInt / 100.0 : 0.02;
+			params->ratioVal = 0;
 
 			wchar_t szName[MAX_PATH];
 			for (int i = 0; i < listCount; ++i)
@@ -239,7 +263,9 @@ INT_PTR CALLBACK DlgProc_Dataset(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 		HICON hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_MAIN_ICON));
 		SendMessage(hDlg, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
 		PostMessage(hDlg, WM_SIZE, 0, 0);
-		SetDlgItemInt(hDlg, IDC_TRAIN_PERCENT, 80, FALSE);
+		SetDlgItemInt(hDlg, IDC_TRAIN_PERCENT, 70, FALSE);
+		SetDlgItemInt(hDlg, IDC_VAL_PERCENT, 20, FALSE);
+		SetDlgItemInt(hDlg, IDC_ST_TEST_PERCENT, 10, FALSE);
 		return TRUE;
 	}
 	case WM_SIZE:
@@ -277,7 +303,9 @@ INT_PTR CALLBACK DlgProc_Dataset(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 		SetWindowPos(GetDlgItem(hDlg, IDC_ST_EXPORT_CONFIG), NULL, firstColumnLeft, firstRowTop + 2 * minLen, rcDlg.right - rcDlg.left - 4 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
 		SetWindowPos(GetDlgItem(hDlg, IDC_ST_DATASET_DIR), NULL, firstColumnLeft, secondRowTop + 2 * minLen, 49 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
 		SetWindowPos(GetDlgItem(hDlg, IDC_ST_TRAIN_PERCENT), NULL, firstColumnLeft, thirdRowTop + 3 * minLen, 9 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
-		SetWindowPos(GetDlgItem(hDlg, IDC_TRAIN_PERCENT), NULL, firstColumnLeft + 10 * margin, thirdRowTop + 1 * minLen, 6 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_TRAIN_PERCENT), NULL, firstColumnLeft + 10 * margin, thirdRowTop + 1 * minLen, 4 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_VAL_PERCENT), NULL, firstColumnLeft + 15 * margin, thirdRowTop + 1 * minLen, 4 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_ST_TEST_PERCENT), NULL, firstColumnLeft + 20 * margin, thirdRowTop + 3 * minLen, 4 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
 		SetWindowPos(GetDlgItem(hDlg, IDC_EXPORT_YAML), NULL, firstColumnLeft, fourthRowTop - 2 * minLen, 25 * margin, 3 * margin, SWP_NOZORDER);
 		SetWindowPos(GetDlgItem(hDlg, IDC_ST_EXPORT_1), NULL, firstColumnLeft, fifthRowTop, 3 * margin, 3 * margin, SWP_NOZORDER);
 		SetWindowPos(GetDlgItem(hDlg, IDC_ST_EXPORT_2), NULL, firstColumnLeft, sixthRowTop, 3 * margin, 3 * margin, SWP_NOZORDER);
@@ -322,8 +350,10 @@ INT_PTR CALLBACK DlgProc_Dataset(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 
 			SplitParams* params = new SplitParams();
 			params->bType = 1;
-			int ratioInt = GetDlgItemInt(hDlg, IDC_ST_TRAIN_PERCENT, NULL, FALSE);
-			params->ratio = (ratioInt > 0 && ratioInt <= 100) ? (double)ratioInt / 100.0 : 0.8;
+			int ratioTrain = GetDlgItemInt(hDlg, IDC_TRAIN_PERCENT, NULL, FALSE);
+			params->ratioTrain = (ratioTrain > 0 && ratioTrain <= 100) ? (double)ratioTrain / 100.0 : 0.7;
+			int ratioVal = GetDlgItemInt(hDlg, IDC_VAL_PERCENT, NULL, FALSE);
+			params->ratioVal = (ratioVal > 0 && ratioVal <= 100) ? (double)ratioVal / 100.0 : 0.2;
 
 			wchar_t szName[MAX_PATH];
 			for (int i = 0; i < listCount; ++i)
@@ -358,14 +388,76 @@ INT_PTR CALLBACK DlgProc_Dataset(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 			wchar_t valImgPath[MAX_PATH];
 			StringCchPrintf(valImgPath, _countof(valImgPath), L"%s\\dataset\\images\\val", szFolderPath);
 			params->valImgPath = valImgPath;
+			wchar_t testImgPath[MAX_PATH];
+			StringCchPrintf(testImgPath, _countof(testImgPath), L"%s\\dataset\\images\\test", szFolderPath);
+			params->testImgPath = testImgPath;
 			wchar_t trainLabelPath[MAX_PATH];
 			StringCchPrintf(trainLabelPath, _countof(trainLabelPath), L"%s\\dataset\\labels\\train", szFolderPath);
 			params->trainLabelPath = trainLabelPath;
 			wchar_t valLabelPath[MAX_PATH];
 			StringCchPrintf(valLabelPath, _countof(valLabelPath), L"%s\\dataset\\labels\\val", szFolderPath);
 			params->valLabelPath = valLabelPath;
+			wchar_t testLabelPath[MAX_PATH];
+			StringCchPrintf(testLabelPath, _countof(testLabelPath), L"%s\\dataset\\labels\\test", szFolderPath);
+			params->testLabelPath = testLabelPath;
 
 			DialogBoxParam(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEVIDEOPROGRESS), hDlg, DlgProc_DatasetProcess, (LPARAM)params);
+			return TRUE;
+		}
+		case IDC_TRAIN_PERCENT:
+		{
+			if (HIWORD(wParam) == EN_CHANGE && isChanged == FALSE)
+			{
+				isChanged = TRUE;
+				int ratioTrain = GetDlgItemInt(hDlg, IDC_TRAIN_PERCENT, NULL, FALSE);
+				if (ratioTrain >= 98)
+				{
+					SetDlgItemInt(hDlg, IDC_TRAIN_PERCENT, 98, FALSE);
+					ratioTrain = 98;
+				}
+				else if (ratioTrain <= 0)
+				{
+					SetDlgItemInt(hDlg, IDC_TRAIN_PERCENT, 1, FALSE);
+					ratioTrain = 1;
+				}
+				int ratioVal = GetDlgItemInt(hDlg, IDC_VAL_PERCENT, NULL, FALSE);
+				if (ratioVal + ratioTrain >= 100)
+				{
+					SetDlgItemInt(hDlg, IDC_VAL_PERCENT, 99 - ratioTrain, FALSE);
+					ratioVal = 99 - ratioTrain;
+				}
+				int ratioTest = 100 - ratioTrain - ratioVal;
+				SetDlgItemInt(hDlg, IDC_ST_TEST_PERCENT, ratioTest, FALSE);
+				isChanged = FALSE;
+			}
+			return TRUE;
+		}
+		case IDC_VAL_PERCENT:
+		{
+			if (HIWORD(wParam) == EN_CHANGE && isChanged == FALSE)
+			{
+				isChanged = TRUE;
+				int ratioVal = GetDlgItemInt(hDlg, IDC_VAL_PERCENT, NULL, FALSE);
+				if (ratioVal >= 98)
+				{
+					SetDlgItemInt(hDlg, IDC_VAL_PERCENT, 98, FALSE);
+					ratioVal = 98;
+				}
+				else if (ratioVal <= 0)
+				{
+					SetDlgItemInt(hDlg, IDC_VAL_PERCENT, 1, FALSE);
+					ratioVal = 1;
+				}
+				int ratioTrain = GetDlgItemInt(hDlg, IDC_TRAIN_PERCENT, NULL, FALSE);
+				if (ratioVal + ratioTrain >= 100)
+				{
+					SetDlgItemInt(hDlg, IDC_TRAIN_PERCENT, 99 - ratioVal, FALSE);
+					ratioTrain = 99 - ratioVal;
+				}
+				int ratioTest = 100 - ratioTrain - ratioVal;
+				SetDlgItemInt(hDlg, IDC_ST_TEST_PERCENT, ratioTest, FALSE);
+				isChanged = FALSE;
+			}
 			return TRUE;
 		}
 		}

@@ -17,7 +17,6 @@
 #define IDD_PAGEINTERFACECFG			701
 #define IDC_PICTURE                     1004
 #define IDC_OK                          1005
-#define IDC_BACK                        1006
 #define IDC_NAME_1                      1008
 #define IDC_NAME_2                      1009
 #define IDC_NAME_3                      1010
@@ -103,9 +102,11 @@
 #define IDC_EXPORT_FPS					3020
 #define IDC_EXPORT						3021
 #define IDC_PROGRESS					4001
-#define IDC_SELECT_DATASET				5002
+#define IDC_SELECT_DATASET				5001
 #define IDC_ST_TRAIN_PERCENT			5004
 #define IDC_TRAIN_PERCENT				5005
+#define IDC_VAL_PERCENT					5028
+#define IDC_ST_TEST_PERCENT				5029
 #define IDC_EXPORT_YAML					5006
 #define IDC_ST_EXPORT_1					5007
 #define IDC_ST_EXPORT_2					5008
