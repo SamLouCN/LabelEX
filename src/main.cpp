@@ -250,6 +250,15 @@ int IDCForDpi(HWND hWnd, int oldIDC)
 	return newIDC;
 }
 
+static BOOL IsFocusOnEditControl()
+{
+	HWND hFocus = GetFocus();
+	if (!hFocus) return FALSE;
+	wchar_t szClass[64] = { 0 };
+	if (GetClassName(hFocus, szClass, _countof(szClass)) == 0) return FALSE;
+	return (_wcsicmp(szClass, L"Edit") == 0);
+}
+
 int WINAPI wWinMain(
 	HINSTANCE hInstance,
 	HINSTANCE hPrevInstance,
@@ -312,21 +321,31 @@ int WINAPI wWinMain(
 	HACCEL hAccel = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDR_ACCELERATOR1));
 
 	MSG msg;
+
 	while (GetMessage(&msg, NULL, 0, 0))
 	{
-		BOOL bPicHandlesDelete = (msg.message == WM_KEYDOWN && msg.wParam == VK_DELETE && GetFocus() == GetDlgItem(hPagePicture, IDC_PICTURE) && selectedIndex != -1);
-		if (!bPicHandlesDelete && hAccel && TranslateAccelerator(hWnd, hAccel, &msg))
+		BOOL bPicHandlesDelete =
+			(msg.message == WM_KEYDOWN &&
+				msg.wParam == VK_DELETE &&
+				GetFocus() == GetDlgItem(hPagePicture, IDC_PICTURE) &&
+				selectedIndex != -1);
+
+		BOOL bEditFocused = IsFocusOnEditControl();
+
+		if (!bPicHandlesDelete && !bEditFocused &&
+			hAccel && TranslateAccelerator(hWnd, hAccel, &msg))
 		{
 			continue;
 		}
-		if (IsDialogMessage(hPageVideo, &msg) || IsDialogMessage(hPageCali, &msg) || IsDialogMessage(hPageDataset, &msg) || IsDialogMessage(hPagePicture, &msg))
+
+		if (IsDialogMessage(hPageVideo, &msg) ||
+			IsDialogMessage(hPageCali, &msg) ||
+			IsDialogMessage(hPageDataset, &msg) ||
+			IsDialogMessage(hPagePicture, &msg))
 		{
 			continue;
 		}
-		if (hAccel && TranslateAccelerator(hWnd, hAccel, &msg))
-		{
-			continue;
-		}
+
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}
