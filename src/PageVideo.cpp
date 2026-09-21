@@ -730,7 +730,7 @@ INT_PTR CALLBACK DlgProc_Video(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 				return 0;
 			}
 			SendMessage(hPagePicture, WM_USER_STOP_MONITOR, 0, 0);
-			DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEVIDEOPROGRESS), hDlg, DlgProc_VideoProgress);
+			DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEVIDEOPROGRESS), GetParent(hDlg), DlgProc_VideoProgress);
 			return TRUE;
 		}
 		}

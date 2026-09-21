@@ -75,6 +75,23 @@ void DoSelectFolder(HWND hWnd)
 				{
 					wcscpy_s(szFolderPath, pszPath);
 					CoTaskMemFree(pszPath);
+					if (pCurrentImage)
+					{
+						delete pCurrentImage;
+						pCurrentImage = nullptr;
+					}
+					currentImagePath.clear();
+					bboxes.clear();
+					selectedIndex = -1;
+					if (GetDlgItem(hPagePicture, IDC_LISTVIEW))
+					{
+						ListView_SetItemState(GetDlgItem(hPagePicture, IDC_LISTVIEW), -1, 0, LVIS_SELECTED);
+					}
+
+					if (hImageCtrl)
+					{
+						InvalidateRect(hImageCtrl, NULL, TRUE);
+					}
 					StartFolderMonitor(hPagePicture);
 					PostMessage(hPagePicture, WM_USER_REFRESH_LIST, 0, 0);
 				}
@@ -84,6 +101,7 @@ void DoSelectFolder(HWND hWnd)
 		pDialog->Release();
 	}
 	CoUninitialize();
+	InvalidateRect(GetDlgItem(hPagePicture, IDC_PICTURE), NULL, FALSE);
 }
 
 DWORD WINAPI RefreshListThread(LPVOID lpParam)
@@ -270,6 +288,14 @@ BOOL DoCreateListView(HWND hWnd)
 
 void LoadImageToDisplay(LPCWSTR szFilePath)
 {
+	if (pCurrentImage && szFilePath && currentImagePath == szFilePath)
+	{
+		if (hImageCtrl)
+		{
+			InvalidateRect(hImageCtrl, NULL, FALSE);
+		}
+		return;
+	}
 	if (pCurrentImage)
 	{
 		delete pCurrentImage;
@@ -1075,7 +1101,7 @@ INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 				isProcessExist = true;
 				MSG msg;
 				while (PeekMessage(&msg, NULL, WM_USER_REFRESH_LIST, WM_USER_REFRESH_LIST, PM_REMOVE)) {}
-				DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEPROCESS), hDlg, DlgProc_Process);
+				DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEPROCESS), GetParent(hDlg), DlgProc_Process);
 				isProcessExist = false;
 			}
 		}
@@ -1329,7 +1355,7 @@ INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 		wchar_t szFileName[MAX_PATH] = { 0 };
 		ListView_GetItemText(hList, nSel, 1, szFileName, _countof(szFileName));
 
-		int ret = MessageBox(hDlg, L"将移除文件至Discarded文件夹。", L"NOTICE", MB_OKCANCEL);
+		int ret = MessageBox(hDlg, L"将移除文件至Discarded文件夹。", L"Notice", MB_OKCANCEL);
 		if (ret != IDOK)
 		{
 			return TRUE;
@@ -1349,10 +1375,14 @@ INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 		if (!MoveFileEx(szFullPath, szNewPath,
 			MOVEFILE_REPLACE_EXISTING | MOVEFILE_COPY_ALLOWED))
 		{
+			currentImagePath.clear();
+			bboxes.clear();
+			selectedIndex = -1;
 			DWORD err = GetLastError();
 			wchar_t msg[128];
 			StringCchPrintf(msg, _countof(msg), L"移动图片失败，错误码：%lu", err);
 			MessageBox(hDlg, msg, L"Error", MB_OK);
+			if (hImageCtrl) InvalidateRect(hImageCtrl, NULL, TRUE);
 			return TRUE;
 		}
 		wchar_t szBaseName[MAX_PATH];
@@ -1370,21 +1400,22 @@ INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 			MoveFileEx(szTxtSrc, szTxtDst,
 				MOVEFILE_REPLACE_EXISTING | MOVEFILE_COPY_ALLOWED);
 		}
-		int itemCount = ListView_GetItemCount(hList);
+		ListView_DeleteItem(hList, nSel);
+
+		int newCount = ListView_GetItemCount(hList);
 		int nextIndex;
-		if (itemCount <= 1)
+		if (newCount == 0)
 		{
 			nextIndex = -1;
 		}
-		else if (nSel < itemCount - 1)
-		{
+		else if (nSel < newCount)
+		{ 
 			nextIndex = nSel;
 		}
 		else
 		{
-			nextIndex = nSel - 1;
+			nextIndex = newCount - 1;
 		}
-		currentImagePath.clear();
 
 		if (nextIndex != -1)
 		{
@@ -1392,11 +1423,11 @@ INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 		}
 		else
 		{
+			currentImagePath.clear();
 			bboxes.clear();
 			selectedIndex = -1;
 			InvalidateRect(GetDlgItem(hDlg, IDC_PICTURE), NULL, TRUE);
 		}
-
 		return TRUE;
 	}
 	case WM_DESTROY:

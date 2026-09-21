@@ -237,7 +237,7 @@ INT_PTR CALLBACK DlgProc_Cali(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 			StringCchPrintf(trainImgPath, _countof(trainImgPath), L"%s\\Calibration", szFolderPath);
 			params->trainImgPath = trainImgPath;
 		
-			DialogBoxParam(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEVIDEOPROGRESS), hDlg, DlgProc_DatasetProcess, (LPARAM)params);
+			DialogBoxParam(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEVIDEOPROGRESS), GetParent(hDlg), DlgProc_DatasetProcess, (LPARAM)params);
 			return TRUE;
 		}
 		}
@@ -401,7 +401,7 @@ INT_PTR CALLBACK DlgProc_Dataset(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 			StringCchPrintf(testLabelPath, _countof(testLabelPath), L"%s\\dataset\\labels\\test", szFolderPath);
 			params->testLabelPath = testLabelPath;
 
-			DialogBoxParam(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEVIDEOPROGRESS), hDlg, DlgProc_DatasetProcess, (LPARAM)params);
+			DialogBoxParam(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEVIDEOPROGRESS), GetParent(hDlg), DlgProc_DatasetProcess, (LPARAM)params);
 			return TRUE;
 		}
 		case IDC_TRAIN_PERCENT:
