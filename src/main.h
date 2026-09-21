@@ -25,7 +25,6 @@ extern "C" {
 #define IDC_LISTVIEW 5001
 #endif
 
-
 INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
 INT_PTR CALLBACK DlgProc_About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
 INT_PTR CALLBACK DlgProc_Mit(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
@@ -41,6 +40,7 @@ BOOL StartFolderMonitor(HWND hDlg);
 BOOL IsImageFile(LPCWSTR szExt);
 void UpdateSingleItemStatus(HWND hDlg, LPCWSTR szBaseName, BOOL bExist);
 int IDCForDpi(HWND hWnd, int oldIDC);
+extern int selectedIndex;
 
 extern wchar_t szFolderPath[MAX_PATH];
 extern HWND hPagePicture, hPageAbout, hPageMit, hPageCali, hPageVideo, hPageProcess, hPageDataset, hPageExportCfg, hPageInterfaceCfg;

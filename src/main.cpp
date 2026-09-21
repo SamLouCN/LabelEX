@@ -19,6 +19,8 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #define ID_MIT 4002
 #define WM_USER_REFRESH_LIST (WM_USER + 100)
 #define WM_USER_UPDATE_ITEM (WM_USER + 101)
+#define WM_USER_DELETE_IMAGE (WM_USER + 104)
+#define WM_USER_DELETE_POINTER (WM_USER + 105)
 
 #include "main.h"
 
@@ -51,13 +53,13 @@ HWND DoCreateMenu(HWND hWnd)
 	AppendMenu(hSubMenuFile, MF_SEPARATOR, 0, NULL);
 	AppendMenu(hSubMenuFile, MF_STRING, ID_EXPORT_CALI, L"导出校准集");
 	AppendMenu(hSubMenuFile, MF_STRING, ID_EXPORT_DATASET, L"导出数据集");
-	AppendMenu(hSubMenuEdit, MF_STRING, ID_UNDO, L"撤销");
-	AppendMenu(hSubMenuEdit, MF_STRING, ID_REDO, L"重做");
+	AppendMenu(hSubMenuEdit, MF_STRING, ID_UNDO, L"撤销（暂无此功能）");
+	AppendMenu(hSubMenuEdit, MF_STRING, ID_REDO, L"重做（暂无此功能）");
 	AppendMenu(hSubMenuEdit, MF_STRING, ID_DELETE_PHOTO, L"删除此图片");
 	AppendMenu(hSubMenuEdit, MF_SEPARATOR, 0, NULL);
-	AppendMenu(hSubMenuEdit, MF_STRING, ID_HISTORY, L"编辑历史");
-	AppendMenu(hSubMenuOption, MF_STRING, ID_CONFIG_EXPORT, L"导出设置（功能测试中）");
-	AppendMenu(hSubMenuOption, MF_STRING, ID_CONFIG_INTERFACE, L"界面设置（功能测试中）");
+	AppendMenu(hSubMenuEdit, MF_STRING, ID_HISTORY, L"编辑历史（暂无此功能）");
+	AppendMenu(hSubMenuOption, MF_STRING, ID_CONFIG_EXPORT, L"导出设置（暂无此功能）");
+	AppendMenu(hSubMenuOption, MF_STRING, ID_CONFIG_INTERFACE, L"界面设置（暂无此功能）");
 	AppendMenu(hSubMenuAbout, MF_STRING, ID_VERSION, L"版本");
 	AppendMenu(hSubMenuAbout, MF_STRING, ID_MIT, L"许可证");
 
@@ -312,7 +314,12 @@ int WINAPI wWinMain(
 	MSG msg;
 	while (GetMessage(&msg, NULL, 0, 0))
 	{
-		if (IsDialogMessage(hPageVideo, &msg) || IsDialogMessage(hPageCali, &msg) || IsDialogMessage(hPageDataset, &msg))
+		BOOL bPicHandlesDelete = (msg.message == WM_KEYDOWN && msg.wParam == VK_DELETE && GetFocus() == GetDlgItem(hPagePicture, IDC_PICTURE) && selectedIndex != -1);
+		if (!bPicHandlesDelete && hAccel && TranslateAccelerator(hWnd, hAccel, &msg))
+		{
+			continue;
+		}
+		if (IsDialogMessage(hPageVideo, &msg) || IsDialogMessage(hPageCali, &msg) || IsDialogMessage(hPageDataset, &msg) || IsDialogMessage(hPagePicture, &msg))
 		{
 			continue;
 		}
@@ -471,6 +478,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			ShowWindow(hPageInterfaceCfg, SW_SHOW);
 			return 0;
 		}
+		case ID_DELETE_PHOTO:
+		{
+			SendMessage(hPagePicture, WM_USER_DELETE_IMAGE, 0, 0);
+			return 0;
+		}
+		case IDC_DELETE_IMAGE:
+			SendMessage(hPagePicture, WM_USER_DELETE_IMAGE, 0, 0);
+			return 0;
 		default:
 			if (hPagePicture)
 				SendMessage(hPagePicture, WM_COMMAND, wParam, lParam);

@@ -5,6 +5,8 @@
 #define WM_USER_UPDATE_ITEM (WM_USER + 101)
 #define WM_USER_STOP_MONITOR (WM_USER + 102)
 #define WM_USER_START_MONITOR (WM_USER + 103)
+#define WM_USER_DELETE_IMAGE (WM_USER + 104)
+#define WM_USER_DELETE_POINTER (WM_USER + 105)
 #define WM_USER_UPDATE_LISTVIEW (WM_USER + 200)
 #define WM_USER_UPDATE_PROGRESS (WM_USER + 201) 
 #define WM_USER_STOP_MARQUEE (WM_USER + 301)
@@ -46,6 +48,7 @@ void DoSelectFolder(HWND hWnd);
 BOOL IsImageFile(LPCWSTR szExt);
 BOOL DoCreateListView(HWND hWnd);
 void LoadBBoxesFromFile(const std::wstring& filePath, int imgWidth, int imgHeight);
+void SelectImageByIndex(HWND hList, int index);
 
 void DoSelectFolder(HWND hWnd)
 {
@@ -138,9 +141,27 @@ DWORD WINAPI RefreshListThread(LPVOID lpParam)
 
 void RefreshListUI(HWND hList, const std::vector<ImageFileInfo>& fileList)
 {
+	std::wstring selectedName;
+	int nSel = ListView_GetNextItem(hList, -1, LVNI_SELECTED);
+	if (nSel != -1)
+	{
+		wchar_t buf[MAX_PATH] = { 0 };
+		ListView_GetItemText(hList, nSel, 1, buf, MAX_PATH);
+		selectedName = buf;
+	}
+	else if (!currentImagePath.empty())
+	{
+		size_t pos = currentImagePath.find_last_of(L"\\/");
+		if (pos != std::wstring::npos)
+		{
+			selectedName = currentImagePath.substr(pos + 1);
+		}
+	}
+
 	SendMessage(hList, WM_SETREDRAW, FALSE, 0);
 	ListView_DeleteAllItems(hList);
 
+	int newSelIndex = -1;
 	for (size_t i = 0; i < fileList.size(); ++i)
 	{
 		const auto& info = fileList[i];
@@ -156,6 +177,12 @@ void RefreshListUI(HWND hList, const std::vector<ImageFileInfo>& fileList)
 		}
 		ListView_SetItemText(hList, nIndex, 0, (LPWSTR)(info.status ? L"\u2714" : L"    \u2716"));
 		ListView_SetItemText(hList, nIndex, 1, (LPWSTR)info.fileName.c_str());
+
+		if (!selectedName.empty() && info.fileName == selectedName)
+		{
+			newSelIndex = nIndex;
+		}
+
 		if ((i % 50) == 0)
 		{
 			MSG msg;
@@ -167,7 +194,14 @@ void RefreshListUI(HWND hList, const std::vector<ImageFileInfo>& fileList)
 			}
 		}
 	}
+
 	SendMessage(hList, WM_SETREDRAW, TRUE, 0);
+
+	if (newSelIndex != -1)
+	{
+		SelectImageByIndex(hList, newSelIndex);
+	}
+
 	InvalidateRect(hList, NULL, TRUE);
 	UpdateWindow(hList);
 }
@@ -676,6 +710,8 @@ LRESULT CALLBACK PicSubclassProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 		if (ptImg.x >= 0 && ptImg.x < imgWidth && ptImg.y >= 0 && ptImg.y < imgHeight)
 		{
 			selectedIndex = -1;
+			dragStart.x = ptImg.x;
+			dragStart.y = ptImg.y;
 			BBox newBox;
 			newBox.left = newBox.right = ptImg.x;
 			newBox.top = newBox.bottom = ptImg.y;
@@ -799,13 +835,38 @@ LRESULT CALLBACK PicSubclassProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 			box.bottom = ptImg.y;
 			
 			int minSize = int(min(pCurrentImage->GetHeight(), pCurrentImage->GetWidth()) / 50);
+
+			int startX = dragStart.x;
+			int startY = dragStart.y;
+			int curX = ptImg.x;
+			int curY = ptImg.y;
+
+			box.left = min(startX, curX);
+			box.right = max(startX, curX);
+			box.top = min(startY, curY);
+			box.bottom = max(startY, curY);
+
 			if (box.right - box.left < minSize)
 			{
-				box.right = box.left + minSize;
+				if (curX >= startX)
+				{
+					box.right = box.left + minSize;
+				}
+				else
+				{
+					box.left = box.right - minSize;
+				}
 			}
 			if (box.bottom - box.top < minSize)
 			{
-				box.bottom = box.top + minSize;
+				if (curY >= startY)
+				{
+					box.bottom = box.top + minSize;
+				}
+				else
+				{
+					box.top = box.bottom - minSize;
+				}
 			}
 			ClampRect(box, 0, 0, pCurrentImage->GetWidth(), pCurrentImage->GetHeight());
 			InvalidateRect(hWnd, NULL, FALSE);
@@ -1255,6 +1316,88 @@ INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 			return TRUE;
 		}
 		break;
+	}
+	case WM_USER_DELETE_IMAGE:
+	{
+		HWND hList = GetDlgItem(hDlg, IDC_LISTVIEW);
+		int nSel = ListView_GetNextItem(hList, -1, LVNI_SELECTED);
+		if (nSel == -1)
+		{
+			return TRUE;
+		}
+
+		wchar_t szFileName[MAX_PATH] = { 0 };
+		ListView_GetItemText(hList, nSel, 1, szFileName, _countof(szFileName));
+
+		int ret = MessageBox(hDlg, L"将移除文件至Discarded文件夹。", L"NOTICE", MB_OKCANCEL);
+		if (ret != IDOK)
+		{
+			return TRUE;
+		}
+
+		if (pCurrentImage)
+		{
+			delete pCurrentImage;
+			pCurrentImage = nullptr;
+		}
+		wchar_t szFullPath[MAX_PATH], szDiscardedPath[MAX_PATH], szNewPath[MAX_PATH];
+		StringCchPrintf(szFullPath, _countof(szFullPath), L"%s\\%s", szFolderPath, szFileName);
+		StringCchPrintf(szDiscardedPath, _countof(szDiscardedPath), L"%s\\Discarded", szFolderPath);
+		StringCchPrintf(szNewPath, _countof(szNewPath), L"%s\\%s", szDiscardedPath, szFileName);
+
+		SHCreateDirectoryExW(NULL, szDiscardedPath, NULL);
+		if (!MoveFileEx(szFullPath, szNewPath,
+			MOVEFILE_REPLACE_EXISTING | MOVEFILE_COPY_ALLOWED))
+		{
+			DWORD err = GetLastError();
+			wchar_t msg[128];
+			StringCchPrintf(msg, _countof(msg), L"移动图片失败，错误码：%lu", err);
+			MessageBox(hDlg, msg, L"Error", MB_OK);
+			return TRUE;
+		}
+		wchar_t szBaseName[MAX_PATH];
+		StringCchCopy(szBaseName, _countof(szBaseName), szFileName);
+		PathRemoveExtension(szBaseName);
+
+		wchar_t szTxtName[MAX_PATH];
+		StringCchPrintf(szTxtName, _countof(szTxtName), L"%s.txt", szBaseName);
+
+		wchar_t szTxtSrc[MAX_PATH], szTxtDst[MAX_PATH];
+		StringCchPrintf(szTxtSrc, _countof(szTxtSrc), L"%s\\%s", szFolderPath, szTxtName);
+		StringCchPrintf(szTxtDst, _countof(szTxtDst), L"%s\\%s", szDiscardedPath, szTxtName);
+		if (PathFileExists(szTxtSrc))
+		{
+			MoveFileEx(szTxtSrc, szTxtDst,
+				MOVEFILE_REPLACE_EXISTING | MOVEFILE_COPY_ALLOWED);
+		}
+		int itemCount = ListView_GetItemCount(hList);
+		int nextIndex;
+		if (itemCount <= 1)
+		{
+			nextIndex = -1;
+		}
+		else if (nSel < itemCount - 1)
+		{
+			nextIndex = nSel;
+		}
+		else
+		{
+			nextIndex = nSel - 1;
+		}
+		currentImagePath.clear();
+
+		if (nextIndex != -1)
+		{
+			SelectImageByIndex(hList, nextIndex);
+		}
+		else
+		{
+			bboxes.clear();
+			selectedIndex = -1;
+			InvalidateRect(GetDlgItem(hDlg, IDC_PICTURE), NULL, TRUE);
+		}
+
+		return TRUE;
 	}
 	case WM_DESTROY:
 	{
