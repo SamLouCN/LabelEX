@@ -17,11 +17,6 @@
 
 using namespace Gdiplus;
 
-struct BBox {
-	int left, top, right, bottom;
-	int classId;
-};
-
 struct ImageFileInfo {
 	std::wstring fileName;
 	BOOL status;
@@ -31,6 +26,9 @@ Bitmap* pCurrentImage = nullptr;
 HWND hImageCtrl = nullptr;
 HWND hProgressDlg = nullptr;
 std::vector<BBox> bboxes;
+std::vector<BBox> dragStartBBoxes;
+
+
 int currentClassId = 0;
 int selectedIndex = -1;
 int threshold = 6;
@@ -44,6 +42,7 @@ wchar_t szFolderPath[MAX_PATH] = { 0 };
 std::wstring currentImagePath;
 BOOL isProcessExist = false;
 BOOL isPendingRefresh = false;
+History history;
 
 void DoSelectFolder(HWND hWnd);
 BOOL IsImageFile(LPCWSTR szExt);
@@ -84,6 +83,7 @@ void DoSelectFolder(HWND hWnd)
 					currentImagePath.clear();
 					bboxes.clear();
 					selectedIndex = -1;
+					history.Clear();
 					if (GetDlgItem(hPagePicture, IDC_LISTVIEW))
 					{
 						ListView_SetItemState(GetDlgItem(hPagePicture, IDC_LISTVIEW), -1, 0, LVIS_SELECTED);
@@ -340,6 +340,7 @@ void LoadImageToDisplay(LPCWSTR szFilePath)
 		
 	if (hImageCtrl)
 	{
+		history.Reset(bboxes, selectedIndex);
 		InvalidateRect(hImageCtrl, NULL, TRUE);
 	}
 }
@@ -572,6 +573,42 @@ Color GetClassColor(int classId)
 	}
 }
 
+void DoUndo(HWND hImg)
+{
+	if (dragMode != None) return;
+	std::vector<BBox> newBoxes;
+	int newSel = -1;
+	std::wstring label;
+	if (!history.Undo(newBoxes, newSel, label)) return;
+
+	bboxes = std::move(newBoxes);
+	selectedIndex = newSel;
+
+	if (hImg)
+	{
+		SetFocus(hImg);
+		InvalidateRect(hImg, NULL, FALSE);
+	}
+}
+
+void DoRedo(HWND hImg)
+{
+	if (dragMode != None) return;
+	std::vector<BBox> newBoxes;
+	int newSel = -1;
+	std::wstring label;
+	if (!history.Redo(newBoxes, newSel, label)) return;
+
+	bboxes = std::move(newBoxes);
+	selectedIndex = newSel;
+
+	if (hImg)
+	{
+		SetFocus(hImg);
+		InvalidateRect(hImg, NULL, FALSE);
+	}
+}
+
 LRESULT CALLBACK PicSubclassProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	switch (message)
@@ -706,6 +743,7 @@ LRESULT CALLBACK PicSubclassProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 		{
 			dragMode = Resizing;
 			resizeHandle = handle;
+			dragStartBBoxes = bboxes;
 			SetCapture(hWnd);
 			return 0;
 		}
@@ -723,6 +761,7 @@ LRESULT CALLBACK PicSubclassProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 				dragMode = Moving;
 				dragOffset.x = ptImg.x - box.left;
 				dragOffset.y = ptImg.y - box.top;
+				dragStartBBoxes = bboxes;
 				SetCapture(hWnd);
 				InvalidateRect(hWnd, NULL, FALSE);
 				break;
@@ -903,11 +942,16 @@ LRESULT CALLBACK PicSubclassProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 	{
 		if (dragMode == Creating && selectedIndex != -1)
 		{
+			BBox boxCopy = bboxes[selectedIndex];
 			BBox& box = bboxes[selectedIndex];
 			if ((box.right - box.left) < 3 || (box.bottom - box.top) < 3)
 			{
 				bboxes.erase(bboxes.begin() + selectedIndex);
 				selectedIndex = -1;
+			}
+			else
+			{
+				history.Commit(bboxes, selectedIndex, L"Create");
 			}
 			dragMode = None;
 			SetFocus(hWnd);
@@ -915,8 +959,12 @@ LRESULT CALLBACK PicSubclassProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 			InvalidateRect(hWnd, NULL, FALSE);
 			return 0;
 		}
-		if (dragMode != None)
+		if (dragMode == Moving || dragMode == Resizing)
 		{
+			if (bboxes != dragStartBBoxes)
+			{
+				history.Commit(bboxes, selectedIndex, dragMode == Moving ? L"Move" : L"Resize");
+			}
 			dragMode = None;
 			ReleaseCapture();
 			InvalidateRect(hWnd, NULL, FALSE);
@@ -929,6 +977,7 @@ LRESULT CALLBACK PicSubclassProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 		{
 			bboxes.erase(bboxes.begin() + selectedIndex);
 			selectedIndex = -1;
+			history.Commit(bboxes, selectedIndex, L"Delete");
 			InvalidateRect(hWnd, NULL, FALSE);
 			return TRUE;
 		}
@@ -1145,6 +1194,7 @@ INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 		switch (WM_ID)
 		{
 		case IDC_SWITCH_NEXT:
+		case IDC_SAVE:
 		case IDC_OK:
 		{
 			if (!pCurrentImage)
@@ -1254,6 +1304,16 @@ INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 			}
 			return TRUE;
 		}
+		case IDC_REDO:
+		{
+			DoRedo(hImageCtrl);
+			return TRUE;
+		}
+		case IDC_UNDO:
+		{
+			DoUndo(hImageCtrl);
+			return TRUE;
+		}
 		}
 		return 0;
 	}
@@ -1353,6 +1413,7 @@ INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 		currentImagePath.clear();
 		bboxes.clear();
 		selectedIndex = -1;
+		history.Clear();
 		InvalidateRect(GetDlgItem(hDlg, IDC_PICTURE), NULL, FALSE);
 		return TRUE;
 	}

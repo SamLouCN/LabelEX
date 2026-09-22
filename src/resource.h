@@ -75,6 +75,7 @@
 #define IDC_DELETE_IMAGE				1062
 #define IDC_UNDO						1063
 #define IDC_REDO						1064
+#define IDC_SAVE						1065
 #define IDC_PICTURE_SL					2001
 #define IDC_ST_NAME						2002
 #define IDC_ST_VERSION					2003
@@ -135,6 +136,11 @@
 #define IDC_ST_CALI_DIR					5101
 #define IDC_ST_CALI_PERCENT				5102
 #define IDC_CALI_PERCENT				5103
+#define IDC_ST_NOTICE					6000
+#define IDC_ST_RECT_WIDTH				6001
+#define IDC_ST_HANDLE_WIDTH				6002
+#define IDC_RECT_WIDTH					6003
+#define IDC_HANDLE_WIDTH				6004
 
 
 // Next default values for new objects

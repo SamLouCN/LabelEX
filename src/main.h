@@ -20,6 +20,7 @@ extern "C" {
 #include <random>
 #include <numeric>
 #include "resource.h"
+#include "history.h"
 
 #ifndef _LISTVIEW
 #define IDC_LISTVIEW 5001

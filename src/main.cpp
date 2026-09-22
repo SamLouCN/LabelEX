@@ -53,11 +53,9 @@ HWND DoCreateMenu(HWND hWnd)
 	AppendMenu(hSubMenuFile, MF_SEPARATOR, 0, NULL);
 	AppendMenu(hSubMenuFile, MF_STRING, ID_EXPORT_CALI, L"导出校准集");
 	AppendMenu(hSubMenuFile, MF_STRING, ID_EXPORT_DATASET, L"导出数据集");
-	AppendMenu(hSubMenuEdit, MF_STRING, ID_UNDO, L"撤销（暂无此功能）");
-	AppendMenu(hSubMenuEdit, MF_STRING, ID_REDO, L"重做（暂无此功能）");
+	AppendMenu(hSubMenuEdit, MF_STRING, ID_UNDO, L"撤销");
+	AppendMenu(hSubMenuEdit, MF_STRING, ID_REDO, L"重做");
 	AppendMenu(hSubMenuEdit, MF_STRING, ID_DELETE_PHOTO, L"删除此图片");
-	AppendMenu(hSubMenuEdit, MF_SEPARATOR, 0, NULL);
-	AppendMenu(hSubMenuEdit, MF_STRING, ID_HISTORY, L"编辑历史（暂无此功能）");
 	AppendMenu(hSubMenuOption, MF_STRING, ID_CONFIG_EXPORT, L"导出设置（暂无此功能）");
 	AppendMenu(hSubMenuOption, MF_STRING, ID_CONFIG_INTERFACE, L"界面设置（暂无此功能）");
 	AppendMenu(hSubMenuAbout, MF_STRING, ID_VERSION, L"版本");
@@ -504,6 +502,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 		case IDC_DELETE_IMAGE:
 			SendMessage(hPagePicture, WM_USER_DELETE_IMAGE, 0, 0);
+			return 0;
+		case ID_UNDO:
+			SendMessage(hPagePicture, WM_COMMAND, MAKEWPARAM(IDC_UNDO, 0), 0);
+			return 0;
+		case ID_REDO:
+			SendMessage(hPagePicture, WM_COMMAND, MAKEWPARAM(IDC_REDO, 0), 0);
 			return 0;
 		default:
 			if (hPagePicture)
