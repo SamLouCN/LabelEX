@@ -11,6 +11,7 @@
 #define WM_USER_CONVERT_DONE (WM_USER + 403)
 #define WM_USER_STOP_MONITOR (WM_USER + 102)
 #define WM_USER_START_MONITOR (WM_USER + 103)
+#define WM_USER_CLEAR_PICTURE (WM_USER + 106)
 
 wchar_t szVideoPath[MAX_PATH] = { 0 };
 HWND hVideoProgress = NULL;
@@ -582,6 +583,7 @@ INT_PTR CALLBACK DlgProc_VideoProgress(HWND hDlg, UINT message, WPARAM wParam, L
 	{
 		if (szFolderPath[0] != 0)
 		{
+			SendMessage(hPagePicture, WM_USER_CLEAR_PICTURE, 0, 0);
 			StartFolderMonitor(hPagePicture);
 			SendMessage(hPagePicture, WM_USER_REFRESH_LIST, 0, 0);
 		}
@@ -709,24 +711,24 @@ INT_PTR CALLBACK DlgProc_Video(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			wchar_t srcBuffer[MAX_PATH] = { 0 };
 			if (GetDlgItemText(hPageVideo, IDC_SOURCE, srcBuffer, MAX_PATH) == 0)
 			{
-				MessageBox(NULL, L"No source file selected", L"error", NULL);
+				MessageBox(NULL, L"No source file selected", L"Error", NULL);
 				return 0;
 			}
 			if (GetDlgItemInt(hPageVideo, IDC_SOURCE_FPS, NULL, FALSE) <= 0)
 			{
-				MessageBox(NULL, L"Source file doesn't have an effective fps!", L"error", NULL);
+				MessageBox(NULL, L"Source file doesn't have an effective fps!", L"Error", NULL);
 				return 0;
 			}
 			int fps = GetDlgItemInt(hPageVideo, IDC_EXPORT_FPS, NULL, FALSE);
 			if (fps <= 0 || fps > GetDlgItemInt(hPageVideo, IDC_SOURCE_FPS, NULL, FALSE))
 			{
-				MessageBox(NULL, L"Target FPS not satisfied", L"error", NULL);
+				MessageBox(NULL, L"Target FPS not satisfied", L"Error", NULL);
 				return 0;
 			}
 			wchar_t dirBuffer[MAX_PATH] = { 0 };
 			if (GetDlgItemText(hPageVideo, IDC_EXPORT_DIR, dirBuffer, MAX_PATH) == 0)
 			{
-				MessageBox(NULL, L"Target directory not satisfied", L"error", NULL);
+				MessageBox(NULL, L"Target directory not satisfied", L"Error", NULL);
 				return 0;
 			}
 			SendMessage(hPagePicture, WM_USER_STOP_MONITOR, 0, 0);

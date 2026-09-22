@@ -7,6 +7,7 @@
 #define WM_USER_START_MONITOR (WM_USER + 103)
 #define WM_USER_DELETE_IMAGE (WM_USER + 104)
 #define WM_USER_DELETE_POINTER (WM_USER + 105)
+#define WM_USER_CLEAR_PICTURE (WM_USER + 106)
 #define WM_USER_UPDATE_LISTVIEW (WM_USER + 200)
 #define WM_USER_UPDATE_PROGRESS (WM_USER + 201) 
 #define WM_USER_STOP_MARQUEE (WM_USER + 301)
@@ -101,7 +102,6 @@ void DoSelectFolder(HWND hWnd)
 		pDialog->Release();
 	}
 	CoUninitialize();
-	InvalidateRect(GetDlgItem(hPagePicture, IDC_PICTURE), NULL, FALSE);
 }
 
 DWORD WINAPI RefreshListThread(LPVOID lpParam)
@@ -1342,6 +1342,19 @@ INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 			return TRUE;
 		}
 		break;
+	}
+	case WM_USER_CLEAR_PICTURE:
+	{
+		if (pCurrentImage)
+		{
+			delete pCurrentImage;
+			pCurrentImage = nullptr;
+		}
+		currentImagePath.clear();
+		bboxes.clear();
+		selectedIndex = -1;
+		InvalidateRect(GetDlgItem(hDlg, IDC_PICTURE), NULL, FALSE);
+		return TRUE;
 	}
 	case WM_USER_DELETE_IMAGE:
 	{
