@@ -12,7 +12,7 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #define ID_UNDO 2001
 #define ID_REDO 2002
 #define ID_DELETE_PHOTO 2003
-#define ID_HISTORY 2004
+#define ID_AUDIT 2004
 #define ID_CONFIG_EXPORT 3001
 #define ID_CONFIG_INTERFACE 3002
 #define ID_VERSION 4001
@@ -56,12 +56,13 @@ HWND DoCreateMenu(HWND hWnd)
 	AppendMenu(hSubMenuEdit, MF_STRING, ID_UNDO, L"撤销");
 	AppendMenu(hSubMenuEdit, MF_STRING, ID_REDO, L"重做");
 	AppendMenu(hSubMenuEdit, MF_STRING, ID_DELETE_PHOTO, L"删除此图片");
-	AppendMenu(hSubMenuOption, MF_STRING, ID_CONFIG_EXPORT, L"导出设置（暂无此功能）");
+	AppendMenu(hSubMenuEdit, MF_SEPARATOR, 0, NULL);
+	AppendMenu(hSubMenuEdit, MF_STRING, ID_AUDIT, L"审计...");
 	AppendMenu(hSubMenuOption, MF_STRING, ID_CONFIG_INTERFACE, L"界面设置（暂无此功能）");
 	AppendMenu(hSubMenuAbout, MF_STRING, ID_VERSION, L"版本");
 	AppendMenu(hSubMenuAbout, MF_STRING, ID_MIT, L"许可证");
 
-	AppendMenu(hMenu, MF_STRING | MF_POPUP, (UINT_PTR)hSubMenuFile, L"文件(&L)");
+	AppendMenu(hMenu, MF_STRING | MF_POPUP, (UINT_PTR)hSubMenuFile, L"文件(&F)");
 	AppendMenu(hMenu, MF_STRING | MF_POPUP, (UINT_PTR)hSubMenuEdit, L"编辑(&E)");
 	AppendMenu(hMenu, MF_STRING | MF_POPUP, (UINT_PTR)hSubMenuOption, L"选项(&O)");
 	AppendMenu(hMenu, MF_STRING | MF_POPUP, (UINT_PTR)hSubMenuAbout, L"关于(&A)");
@@ -459,24 +460,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			ShowWindow(hPageDataset, SW_SHOW);
 			return 0;
 		}
-		case ID_CONFIG_EXPORT:
-		{
-			if (hPageExportCfg && IsWindow(hPageExportCfg))
-			{
-				SetForegroundWindow(hPageExportCfg);
-				return 0;
-			}
-			hPageExportCfg = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEEXPORTCFG), hWnd, DlgProc_ExportCfg);
-			RECT rcParent;
-			GetWindowRect(hWnd, &rcParent);
-			int dialogWidth = IDCForDpi(hPageExportCfg, 600);
-			int dialogHeight = IDCForDpi(hPageExportCfg, 380);
-			int x = rcParent.left + (rcParent.right - rcParent.left - dialogWidth) / 2;
-			int y = rcParent.top + (rcParent.bottom - rcParent.top - dialogHeight) / 2;
-			SetWindowPos(hPageExportCfg, NULL, x, y, dialogWidth, dialogHeight, SWP_NOZORDER);
-			ShowWindow(hPageExportCfg, SW_SHOW);
-			return 0;
-		}
 		case ID_CONFIG_INTERFACE:
 		{
 			if (hPageInterfaceCfg && IsWindow(hPageInterfaceCfg))
@@ -487,8 +470,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			hPageInterfaceCfg = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEINTERFACECFG), hWnd, DlgProc_InterfaceCfg);
 			RECT rcParent;
 			GetWindowRect(hWnd, &rcParent);
-			int dialogWidth = IDCForDpi(hPageInterfaceCfg, 600);
-			int dialogHeight = IDCForDpi(hPageInterfaceCfg, 380);
+			int dialogWidth = IDCForDpi(hPageInterfaceCfg, 325);
+			int dialogHeight = IDCForDpi(hPageInterfaceCfg, 250);
 			int x = rcParent.left + (rcParent.right - rcParent.left - dialogWidth) / 2;
 			int y = rcParent.top + (rcParent.bottom - rcParent.top - dialogHeight) / 2;
 			SetWindowPos(hPageInterfaceCfg, NULL, x, y, dialogWidth, dialogHeight, SWP_NOZORDER);
