@@ -21,6 +21,7 @@ extern "C" {
 #include <numeric>
 #include "resource.h"
 #include "history.h"
+#include "ini.h"
 
 #ifndef _LISTVIEW
 #define IDC_LISTVIEW 5001
@@ -33,7 +34,6 @@ INT_PTR CALLBACK DlgProc_Video(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 INT_PTR CALLBACK DlgProc_Cali(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
 INT_PTR CALLBACK DlgProc_Dataset(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
 INT_PTR CALLBACK DlgProc_InterfaceCfg(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
-INT_PTR CALLBACK DlgProc_ExportCfg(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
 
 void DoSelectFolder(HWND hWnd);
 void StopFolderMonitor();

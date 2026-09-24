@@ -28,10 +28,10 @@ HWND hProgressDlg = nullptr;
 std::vector<BBox> bboxes;
 std::vector<BBox> dragStartBBoxes;
 
-
 int currentClassId = 0;
 int selectedIndex = -1;
-int threshold = 6;
+int iniBox = 4;
+int iniHandle = 8;
 WNDPROC oldPicProc = NULL;
 enum DragMode {None, Moving, Resizing, Creating};
 DragMode dragMode = None;
@@ -433,7 +433,7 @@ RECT ImageToControl(const BBox& box)
 
 void DrawHandles(Graphics& graphics, const RECT& rc)
 {
-	int handleSize = IDCForDpi(hPagePicture, 8);
+	int handleSize = IDCForDpi(hPagePicture, iniHandle);
 	SolidBrush brush(Color(255, 255, 255, 255));
 	Pen pen(Color(255, 0, 0, 0));
 	POINT pts[8] = {
@@ -481,7 +481,7 @@ int HitTestHandle(HWND hWnd, POINT ptCtrl)
 		{ rc.left, rc.bottom },
 		{ rc.left, (rc.top + rc.bottom) / 2 }
 	};
-	int handleSize = IDCForDpi(hPagePicture, 8);
+	int handleSize = IDCForDpi(hPagePicture, iniHandle);
 	for (int i = 0; i < 8; ++i)
 	{
 		RECT hr = { pts[i].x - handleSize / 2, pts[i].y - handleSize / 2,
@@ -658,7 +658,7 @@ LRESULT CALLBACK PicSubclassProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 			DrawText(hdcMem, L"从列表中单击选择一张图片", -1, &rcClient, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 		}
 		{
-			threshold = IDCForDpi(hPagePicture, 4);
+			int threshold = IDCForDpi(hPagePicture, iniBox);
 			Graphics graphics(hdcMem);
 			Pen pen(Color(255, 59, 48, 0), threshold);
 			for (size_t i = 0; i < bboxes.size(); ++i) 
@@ -749,7 +749,7 @@ LRESULT CALLBACK PicSubclassProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 		}
 
 		bool found = FALSE;
-		int expand = threshold;
+		int expand = IDCForDpi(hPagePicture, iniBox);
 		for (int i = (int)bboxes.size() - 1; i >= 0; --i)
 		{
 			const BBox& box = bboxes[i];
@@ -1037,6 +1037,8 @@ INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 	{
 	case WM_INITDIALOG:
 	{
+		iniBox = ini.GetInt(L"Interface", L"box_width", 4);
+		iniHandle = ini.GetInt(L"Interface", L"handle_width", 8);
 		hImageCtrl = CreateWindow(L"BUTTON", L"",
 			WS_CHILD | WS_VISIBLE | BS_OWNERDRAW | WS_TABSTOP,
 			0, 0, 0, 0,

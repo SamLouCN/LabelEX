@@ -470,8 +470,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			hPageInterfaceCfg = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEINTERFACECFG), hWnd, DlgProc_InterfaceCfg);
 			RECT rcParent;
 			GetWindowRect(hWnd, &rcParent);
-			int dialogWidth = IDCForDpi(hPageInterfaceCfg, 325);
-			int dialogHeight = IDCForDpi(hPageInterfaceCfg, 250);
+			int dialogWidth = IDCForDpi(hPageInterfaceCfg, 315);
+			int dialogHeight = IDCForDpi(hPageInterfaceCfg, 240);
 			int x = rcParent.left + (rcParent.right - rcParent.left - dialogWidth) / 2;
 			int y = rcParent.top + (rcParent.bottom - rcParent.top - dialogHeight) / 2;
 			SetWindowPos(hPageInterfaceCfg, NULL, x, y, dialogWidth, dialogHeight, SWP_NOZORDER);

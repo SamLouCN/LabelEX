@@ -4,6 +4,8 @@
 
 #include "main.h"
 
+IniFile ini(L".\\config.ini");
+
 INT_PTR CALLBACK DlgProc_InterfaceCfg(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	switch (message)
@@ -21,14 +23,15 @@ INT_PTR CALLBACK DlgProc_InterfaceCfg(HWND hDlg, UINT message, WPARAM wParam, LP
 		SendMessage(GetDlgItem(hDlg, IDC_RECT_WIDTH), CB_ADDSTRING, 0, (LPARAM)L"6");
 		SendMessage(GetDlgItem(hDlg, IDC_RECT_WIDTH), CB_ADDSTRING, 0, (LPARAM)L"7");
 		SendMessage(GetDlgItem(hDlg, IDC_RECT_WIDTH), CB_ADDSTRING, 0, (LPARAM)L"8");
-		SendMessage(GetDlgItem(hDlg, IDC_RECT_WIDTH), CB_SETCURSEL, 3, 0);
+		SendMessage(GetDlgItem(hDlg, IDC_RECT_WIDTH), CB_SETCURSEL, ini.GetInt(L"Interface", L"box_width", 4) - 1, 0);
+		SendMessage(GetDlgItem(hDlg, IDC_HANDLE_WIDTH), CB_ADDSTRING, 0, (LPARAM)L"2");
 		SendMessage(GetDlgItem(hDlg, IDC_HANDLE_WIDTH), CB_ADDSTRING, 0, (LPARAM)L"4");
 		SendMessage(GetDlgItem(hDlg, IDC_HANDLE_WIDTH), CB_ADDSTRING, 0, (LPARAM)L"6");
 		SendMessage(GetDlgItem(hDlg, IDC_HANDLE_WIDTH), CB_ADDSTRING, 0, (LPARAM)L"8");
 		SendMessage(GetDlgItem(hDlg, IDC_HANDLE_WIDTH), CB_ADDSTRING, 0, (LPARAM)L"10");
 		SendMessage(GetDlgItem(hDlg, IDC_HANDLE_WIDTH), CB_ADDSTRING, 0, (LPARAM)L"12");
 		SendMessage(GetDlgItem(hDlg, IDC_HANDLE_WIDTH), CB_ADDSTRING, 0, (LPARAM)L"14");
-		SendMessage(GetDlgItem(hDlg, IDC_HANDLE_WIDTH), CB_SETCURSEL, 2, 0);
+		SendMessage(GetDlgItem(hDlg, IDC_HANDLE_WIDTH), CB_SETCURSEL, ini.GetInt(L"Interface", L"handle_width", 8)/2 - 1, 0);
 		PostMessage(hDlg, WM_SIZE, 0, 0);
 		return TRUE;
 	}
@@ -40,16 +43,16 @@ INT_PTR CALLBACK DlgProc_InterfaceCfg(HWND hDlg, UINT message, WPARAM wParam, LP
 		UINT minLen = IDCForDpi(hDlg, 1);
 		UINT fontHeight = IDCForDpi(hDlg, 20);
 
-		UINT firstColumnLeft = 2 * margin;
+		UINT firstColumnLeft = 1 * margin;
 		UINT secondColumnLeft = 17 * margin;
 		UINT thirdColumnLeft = 32 * margin;
-		UINT firstRowTop = 2 * margin;
-		UINT secondRowTop = 5 * margin;
-		UINT thirdRowTop = 8 * margin;
-		UINT fourthRowTop = 11 * margin;
-		UINT fifthRowTop = 14 * margin;
-		UINT sixthRowTop = 17 * margin;
-		UINT seventhRowTop = 21 * margin;
+		UINT firstRowTop = 1 * margin;
+		UINT secondRowTop = 4 * margin;
+		UINT thirdRowTop = 7 * margin;
+		UINT fourthRowTop = 10 * margin;
+		UINT fifthRowTop = 12 * margin;
+		UINT sixthRowTop = 16 * margin;
+		UINT seventhRowTop = 20 * margin;
 		UINT eighthRowTop = 24 * margin;
 
 		SetWindowPos(GetDlgItem(hDlg, IDC_ST_NOTICE), NULL, firstColumnLeft, firstRowTop, 20 * margin, 3 * margin, SWP_NOZORDER);
@@ -57,16 +60,23 @@ INT_PTR CALLBACK DlgProc_InterfaceCfg(HWND hDlg, UINT message, WPARAM wParam, LP
 		SetWindowPos(GetDlgItem(hDlg, IDC_RECT_WIDTH), NULL, secondColumnLeft + 4 * margin, secondRowTop, 8 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
 		SetWindowPos(GetDlgItem(hDlg, IDC_ST_HANDLE_WIDTH), NULL, firstColumnLeft, thirdRowTop, 10 * margin, 3 * margin, SWP_NOZORDER);
 		SetWindowPos(GetDlgItem(hDlg, IDC_HANDLE_WIDTH), NULL, secondColumnLeft + 4 * margin, thirdRowTop, 8 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
-		SetWindowPos(GetDlgItem(hDlg, IDC_OK), NULL, rcDlg.right - 9 * margin, sixthRowTop, 7 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_OK), NULL, rcDlg.right - 8 * margin, rcDlg.bottom - 3 * margin - 3 * minLen, 7 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
 		return TRUE;
 	}
 	case WM_COMMAND:
 	{
-		int WM_ID = HIWORD(wParam);
+		int WM_ID = LOWORD(wParam);
 		switch (WM_ID)
 		{
 		case IDC_OK:
+		{
+			int threshold = GetDlgItemInt(hDlg, IDC_RECT_WIDTH, NULL, FALSE);
+			int thresholdHandle = GetDlgItemInt(hDlg, IDC_HANDLE_WIDTH, NULL, FALSE);
+			ini.SetInt(L"Interface", L"box_width", threshold);
+			ini.SetInt(L"Interface", L"handle_width", thresholdHandle);
+			DestroyWindow(hDlg);
 			return TRUE;
+		}
 		}
 		return FALSE;
 	}
