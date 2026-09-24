@@ -1,12 +1,13 @@
 # ARCHITECTURE
-> Version: 0.1.0(beta) Dev 00021  
+> Version: 1.0.0 Dev 01003
 > Language: Simplified Chinese
 
 # 技术栈
 C++ 17,  
 Win32 API,  
 GDI+,  
-Common Controls
+Common Controls, 
+FFmpeg
 
 # 总架构图
 ### 暂未更新

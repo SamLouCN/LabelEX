@@ -1,5 +1,5 @@
 # LabelEX API Documentation
-> Version: 0.1.0(beta) Dev 00021  
+> Version: 1.0.0 Dev 01003 
 > Language: Simplified Chinese
 
 ## Content
@@ -15,12 +15,18 @@
 #define ID_OPEN_FOLDER 1002							//Menu ID for folder opening
 #define ID_EXPORT_CALI 1003							//Menu ID for Caliberation Dataset exporting
 #define ID_EXPORT_DATASET 1004						//Menu ID for Dataset exporting
-#define ID_CONFIG_EXPORT 2001						//Menu ID for exporting configuration
-#define ID_CONFIG_INTERFACE 2002					//Menu ID for ui configuration
-#define ID_VERSION 3001								//Menu ID for version page
-#define ID_MIT 3002									//Menu ID for license page
+#define ID_UNDO 2001								//Menu ID for Undoing operations on IDC_PICTURE
+#define ID_REDO 2002								//Menu ID for Redoing operations on IDC_PICTURE
+#define ID_DELETE_PHOTO 2003						//Menu ID for deleting selected image
+#define ID_AUDIT 2004								//(Unfinished) Menu ID for Entering auditing mode
+#define ID_CONFIG_EXPORT 3001						//(Aborted) Menu ID for export configurations
+#define ID_CONFIG_INTERFACE 3002					//Menu ID for interface configurations
+#define ID_VERSION 4001								//Menu ID for version page
+#define ID_MIT 4002									//Menu ID for license page
 #define WM_USER_REFRESH_LIST (WM_USER + 100)		//Message for a thorough list refresh, when photos are added or removed
 #define WM_USER_UPDATE_ITEM (WM_USER + 101)			//Message for item adding, when txt files are added or removed
+#define WM_USER_DELETE_IMAGE (WM_USER + 104)		//Message for deleting images
+#define WM_USER_DELETE_POINTER (WM_USER + 105)		//Message for deleting pCurrentImage
 ```
 #### PagePicture.cpp
 ```cpp
@@ -28,12 +34,15 @@
 #define WM_USER_UPDATE_ITEM (WM_USER + 101)			//Message for item adding, when txt files are added or removed
 #define WM_USER_STOP_MONITOR (WM_USER + 102)		//Message for stopping folder monitor
 #define WM_USER_START_MONITOR (WM_USER + 103)		//(Aborted) Message for starting folder monitor
+#define WM_USER_DELETE_IMAGE (WM_USER + 104)		//Message for deleting images
+#define WM_USER_DELETE_POINTER (WM_USER + 105)		//Message for deleting pCurrentImage
+#define WM_USER_CLEAR_PICTURE (WM_USER + 106)		//Message for clearing IDC_PICTURE
 #define WM_USER_UPDATE_LISTVIEW (WM_USER + 200)		//Message for UI updating of IDC_LISTVIEW
 #define WM_USER_UPDATE_PROGRESS (WM_USER + 201) 	//Message for UI updating of IDC_PROGRESS
 #define WM_USER_STOP_MARQUEE (WM_USER + 301)		//Message for stopping MARQUEE of IDC_PROGRESS
 #define TIMER_REFRESH_DEBOUNCE 1001					//Message for time-up of the timer 
 ```
-#### PageAbout.cpp
+#### PageVideo.cpp
 ```cpp
 #define WM_USER_REFRESH_LIST (WM_USER + 100)		//Message for a thorough list refresh, when photos are added or removed
 #define WM_USER_VIDEO_READY (WM_USER + 400)			//Message when a video is accepted by FFmpeg and is ready to convert
@@ -52,11 +61,6 @@
 ## Structs
 #### PagePicture.cpp
 ```cpp
-struct BBox {
-	int left, top, right, bottom;	//The basic specs of your drawn rectangle
-	int classId;					//The Class ID of the circled object
-};
-
 struct ImageFileInfo {
 	std::wstring fileName;			//The filename in the IDC_LISTVIEW
 	BOOL status;					//The status in the IDC_LISTVIEW
@@ -90,6 +94,16 @@ struct SplitParams
 	BOOL bType;									//type of the processing
 };
 ```
+#### history.h
+```cpp
+struct BBox;				//struct of boxes
+struct DocumentSnapshot;	//struct of snapshot for boxes
+class History				//class of limited history record
+```
+#### ini.h
+```cpp
+class IniFile				//class of configurating config.ini
+```
 
 ## Global Variables
 #### main.cpp
@@ -103,23 +117,27 @@ HWND hPagePicture;							//Picture页面句柄
 ```
 #### PagePicture.cpp
 ```cpp
-Bitmap* pCurrentImage = nullptr;					//打开的图片句柄
+Bitmap* pCurrentImage = nullptr;					//当前显示的图片句柄（GDI+ Bitmap）
 HWND hImageCtrl = nullptr;							//图片编辑区句柄（Button控件）
-HWND hProgressDlg = nullptr;						//处理窗口句柄
-std::vector<BBox> bboxes;							//矩形集合
-int currentClassId = 0;								//当前的物体的类别
-int selectedIndex = -1;								//选中的矩形索引
-int threshold = 6;									//画笔与矩形宽度							
-WNDPROC oldPicProc = NULL;							//子类化前原有的处理过程
+HWND hProgressDlg = nullptr;						//处理窗口句柄（marquee 进度框）
+std::vector<BBox> bboxes;							//当前图片的矩形集合
+std::vector<BBox> dragStartBBoxes;					//拖拽开始时的矩形快照（用于判断是否提交历史）
+
+int currentClassId = 0;								//当前选中的物体类别
+int selectedIndex = -1;								//选中的矩形索引（-1 表示无选中）
+int iniBox = 4;										//矩形边框粗细（从 INI 读取）
+int iniHandle = 8;									//手柄尺寸（从 INI 读取）
+WNDPROC oldPicProc = NULL;							//子类化前原有的窗口过程
 enum DragMode {None, Moving, Resizing, Creating};	//鼠标拖拽模式
-DragMode dragMode = None;
-int resizeHandle = -1;								//手柄
-POINT dragStart;									//起始拖拽坐标
-POINT dragOffset;									//拖拽偏移量								
-wchar_t szFolderPath[MAX_PATH] = { 0 };				//当前文件夹目录
-std::wstring currentImagePath;						//当前图片目录
-BOOL isProcessExist = false;						//是否正在处理
-BOOL isPendingRefresh = false;						//处理过程中是否有新的
+DragMode dragMode = None;							//当前拖拽状态
+int resizeHandle = -1;								//当前拖拽的手柄索引（-1 表示无）
+POINT dragStart;									//拖拽起始坐标（图像坐标系）
+POINT dragOffset;									//拖拽偏移量（图像坐标系）
+wchar_t szFolderPath[MAX_PATH] = { 0 };				//当前标注文件夹目录
+std::wstring currentImagePath;						//当前图片完整路径
+BOOL isProcessExist = false;						//刷新线程是否正在运行
+BOOL isPendingRefresh = false;						//刷新期间是否有新的刷新请求
+History history;									//撤销/重做栈
 ```
 #### PageVideo.cpp
 ```cpp
@@ -130,6 +148,7 @@ int videoCount;										//视频计数
 #### PageExport.cpp
 ```cpp
 HWND hDsProcessDlg;									//数据集处理窗口句柄
+BOOL isChanged = FALSE;								//百分比同时变化限制
 ```
 
 ## Functions
@@ -285,6 +304,17 @@ Color GetClassColor(int classId)
 - 简介：画笔选择颜色用以绘制不同的类的矩形
 - 参数：类`classId`
 - 返回：颜色类`
+void DoUndo(HWND hImg)
+撤销图片标注更改
+- 简介：从历史栈弹出并恢复到上一步的矩形集合
+- 参数：图片编辑区句柄`hImg`
+- 返回：无
+
+void DoRedo(HWND hImg)
+重做图片标注更改
+- 简介：从历史栈恢复被撤销的矩形集合
+- 参数：图片编辑区句柄`hImg`
+- 返回：无
 
 #### PageVideo.cpp
 ```cpp
@@ -326,7 +356,18 @@ DWORD WINAPI DoConvertVideo(LPVOID lpParam)
 - 简介：通过FFmpeg动态链接库解析视频，保存指定帧到指定的文件夹
 - 参数：父窗口上下文`lpParam`
 - 返回：任何时候都返回`0`
-
+```cpp
+bool WriteYaml(const std::wstring& path, const std::wstring& content);
+```
+- 简介：将字符串内容以 UTF-8 编码写入指定文件。
+- 参数：path：目标文件完整路径。content：要写入的文本内容。
+- 返回：true：文件打开成功并完成写入。false：文件打开失败。
+```cpp
+bool IsEditEmpty(HWND hEdit);
+```
+简介：判断 EDIT 控件中的文本是否为空或仅由空白字符组成。
+参数：hEdit：EDIT 控件窗口句柄。
+返回：true：文本为空或全为空白。false：存在至少一个非空白字符。
 #### PageExport.cpp
 ```cpp
 DWORD WINAPI BuildDataset(LPVOID lpParam)

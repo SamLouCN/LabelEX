@@ -1,6 +1,6 @@
 # LabelEX - For EASY model labeling!
 There are many model labeling tools available today, but they either fail completely after changing environments, or are painfully difficult to use and plagued by frequent crashes.  
-It's time to switch to **LabelEX** – a labeling tool written entirely with the Win32 API.
+It's time to switch to **LabelEX** – a labeling tool written with the Win32 API and FFmpeg DLLs.
 ## Quick start guide
 Simplified Chinese:  
 打开`LabelEX.exe`，界面如下所示 
@@ -23,13 +23,13 @@ Simplified Chinese:
 - 在上方绘制矩形框，注意使得矩形框内侧紧贴需要标注的物体边缘，矩形框本身并不计入  
 - 单击矩形框可选中对应的矩形，此时出现编辑手柄  
 - 按住矩形框即可拖动矩形框，按住编辑手柄即可编辑矩形框大小  
-- 如绘制出现问题，在选中矩形框后按下`delete`，即可删除不需要的矩形框
+- 如绘制出现问题，在选中矩形框后按下`delete`，即可删除不需要的矩形框，也可以`Ctrl`+`Z`撤销有问题的修改，或者`Ctrl`+`Y`将其重做  
 
-绘制完毕后，单击右下角的“确定”，会自动生成此图片的标签文件，并切换到下一张图片  
+绘制完毕后，单击右下角的“确定”、按下`Enter`或者`Ctrl`+`S`，会自动生成此图片的标签文件，并切换到下一张图片  
 标签文件将生成在当前目录，当当前目录下存在有效的标签文件时，列表状态将变为“√”，此时单击列表的文件可以预览标注结果  
 
 文件菜单中单击导出校准集，可以按照比例导出用于格式转换的校准集  
-单击导出数据集，可以按照比例导出用于训练的数据集
+单击导出数据集，可以按照比例导出用于训练的数据集和其YAML描述文件
 ## System requirement
 - Operating System: Windows 10/11 (build 17763 and above)  
 - Architecture: x86/64  
@@ -46,9 +46,15 @@ LabelEX
 │   ├── main.cpp/h # main/program entrance
 │   ├── PageAbout.cpp # about and license page
 │   ├── PagePicture.cpp # picture editing page
+│   ├── PageVideo.cpp # import video
+│   ├── PageConfig.cpp # configuration page
+│   ├── ini.h # .ini files operations
+│   ├── history.h # undo and redo utilities
 │	└── resource.h # resource ID
 ├── res/
 │   ├── LabelEX.rc # resource files
+│   ├── icon.ico # icon
+│   ├── SL.bmp # SL flag shown in version page
 │	└── manifest.xml # enable Common Controls 6.0
 ├── CMakeLists.txt # CMake configurations
 └── README.md # readme
