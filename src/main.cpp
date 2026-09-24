@@ -31,10 +31,10 @@ static wchar_t szTitle[] = L"LabelEX";
 HINSTANCE hInst;
 HANDLE hExitEvent = NULL;
 HANDLE hMonitorThread = NULL;
-HWND hPagePicture, hPageAbout, hPageMit, hPageVideo, hPageProcess, hPageCali, hPageDataset, hPageExportCfg, hPageInterfaceCfg;
+HWND hPagePicture, hPageAbout, hPageMit, hPageVideo, hPageProcess, hPageCali, hPageDataset, hPageExportCfg, hPageInterfaceCfg, hPageAudit;
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-BOOL DoCreateDialog(HWND hWnd, HWND* hPagePicture);
+BOOL DoCreateDialog(HWND hWnd, HWND* hPagePicture, HWND* hPageAudit);
 void StopFolderMonitor();
 BOOL StartFolderMonitor(HWND hDlg);
 
@@ -56,9 +56,9 @@ HWND DoCreateMenu(HWND hWnd)
 	AppendMenu(hSubMenuEdit, MF_STRING, ID_UNDO, L"撤销");
 	AppendMenu(hSubMenuEdit, MF_STRING, ID_REDO, L"重做");
 	AppendMenu(hSubMenuEdit, MF_STRING, ID_DELETE_PHOTO, L"删除此图片");
-	AppendMenu(hSubMenuEdit, MF_SEPARATOR, 0, NULL);
-	AppendMenu(hSubMenuEdit, MF_STRING, ID_AUDIT, L"审计...");
-	AppendMenu(hSubMenuOption, MF_STRING, ID_CONFIG_INTERFACE, L"界面设置（暂无此功能）");
+	//AppendMenu(hSubMenuEdit, MF_SEPARATOR, 0, NULL);
+	//AppendMenu(hSubMenuEdit, MF_STRING, ID_AUDIT, L"审计...（暂无此功能）");
+	AppendMenu(hSubMenuOption, MF_STRING, ID_CONFIG_INTERFACE, L"界面设置");
 	AppendMenu(hSubMenuAbout, MF_STRING, ID_VERSION, L"版本");
 	AppendMenu(hSubMenuAbout, MF_STRING, ID_MIT, L"许可证");
 
@@ -71,15 +71,17 @@ HWND DoCreateMenu(HWND hWnd)
 	return 0;
 }
 
-BOOL DoCreateDialog(HWND hWnd, HWND* hPagePicture)
+BOOL DoCreateDialog(HWND hWnd, HWND* hPagePicture, HWND* hPageAudit)
 {
 	*hPagePicture = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEPICTURE), hWnd, DlgProc_Picture);
-	if (*hPagePicture == NULL)
+	*hPageAudit = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEAUDIT), hWnd, DlgProc_Audit);
+	if (*hPagePicture == NULL || *hPagePicture == NULL)
 	{
 		MessageBox(NULL, L"Failed to create the dialog", L"Error", NULL);
 		return FALSE;
 	}
 	ShowWindow(*hPagePicture, SW_SHOW);
+	ShowWindow(*hPageAudit, SW_HIDE);
 	return TRUE;
 }
 
@@ -358,7 +360,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	{
 	case WM_CREATE:
 		DoCreateMenu(hWnd);
-		DoCreateDialog(hWnd, &hPagePicture);
+		DoCreateDialog(hWnd, &hPagePicture, &hPageAudit);
 		return 0;
 	case WM_COMMAND:
 	{

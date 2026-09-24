@@ -341,7 +341,7 @@ void LoadImageToDisplay(LPCWSTR szFilePath)
 	if (hImageCtrl)
 	{
 		history.Reset(bboxes, selectedIndex);
-		InvalidateRect(hImageCtrl, NULL, TRUE);
+		InvalidateRect(hImageCtrl, NULL, FALSE);
 	}
 }
 
@@ -1458,7 +1458,7 @@ INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 			wchar_t msg[128];
 			StringCchPrintf(msg, _countof(msg), L"移动图片失败，错误码：%lu", err);
 			MessageBox(hDlg, msg, L"Error", MB_OK);
-			if (hImageCtrl) InvalidateRect(hImageCtrl, NULL, TRUE);
+			if (hImageCtrl) InvalidateRect(hImageCtrl, NULL, FALSE);
 			return TRUE;
 		}
 		wchar_t szBaseName[MAX_PATH];

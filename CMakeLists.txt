@@ -22,6 +22,7 @@ set(SOURCES
 	src/PageVideo.cpp
 	src/PageExport.cpp
 	src/PageConfig.cpp
+	src/PageAudit.cpp
 )
 
 set(HEADERS

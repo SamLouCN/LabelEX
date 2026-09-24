@@ -13,8 +13,8 @@
 #define IDD_PAGEVIDEOPROGRESS			411
 #define IDD_PAGEDATASET					501
 #define IDD_PAGECALI					511
-#define IDD_PAGEEXPORTCFG				601
 #define IDD_PAGEINTERFACECFG			701
+#define IDD_PAGEAUDIT					801
 #define IDC_PICTURE                     1004
 #define IDC_OK                          1005
 #define IDC_NAME_1                      1008

@@ -126,6 +126,32 @@ DWORD WINAPI BuildDataset(LPVOID lpParam)
 	return 0;
 }
 
+bool WriteYaml(const std::wstring& path, const std::wstring& content)
+{
+	FILE* f = nullptr;
+	if (_wfopen_s(&f, path.c_str(), L"w, ccs=UTF-8") != 0 || !f)
+	{
+		return false;
+	}
+	fputws(content.c_str(), f);
+	fclose(f);
+	return true;
+}
+
+bool IsEditEmpty(HWND hEdit)
+{
+	wchar_t buf[50] = { 0 };
+	GetWindowTextW(hEdit, buf, _countof(buf));
+	for (const wchar_t* p = buf; *p; ++p)
+	{
+		if (!iswspace(*p))
+		{
+			return FALSE;
+		}
+	}
+	return TRUE;
+}
+
 INT_PTR CALLBACK DlgProc_DatasetProcess(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	switch (message)
@@ -266,6 +292,12 @@ INT_PTR CALLBACK DlgProc_Dataset(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 		SetDlgItemInt(hDlg, IDC_TRAIN_PERCENT, 70, FALSE);
 		SetDlgItemInt(hDlg, IDC_VAL_PERCENT, 20, FALSE);
 		SetDlgItemInt(hDlg, IDC_ST_TEST_PERCENT, 10, FALSE);
+		wchar_t nameBuffer[50];
+		for (int i = 0; i <= 9; ++i)
+		{
+			GetDlgItemText(hPagePicture, IDC_NAMEEDIT_1 + i, nameBuffer, _countof(nameBuffer));
+			SetDlgItemText(hDlg, IDC_EXPORT_NAME_1 + i, nameBuffer);
+		}
 		return TRUE;
 	}
 	case WM_SIZE:
@@ -400,6 +432,44 @@ INT_PTR CALLBACK DlgProc_Dataset(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 			wchar_t testLabelPath[MAX_PATH];
 			StringCchPrintf(testLabelPath, _countof(testLabelPath), L"%s\\dataset\\labels\\test", szFolderPath);
 			params->testLabelPath = testLabelPath;
+
+			if (SendMessage(GetDlgItem(hDlg, IDC_EXPORT_YAML), BM_GETCHECK, 0, 0) == 1)
+			{
+				std::wstring yaml;
+				yaml += L"train: ./dataset/images/train\n";
+				yaml += L"val: ./dataset/images/val\n";
+				yaml += L"test: ./dataset/images/test\n";
+				int totalNames = 0;
+				wchar_t nc[256];
+				wchar_t name[50];
+				for (int i = 0; i <= 9; ++i)
+				{
+					if (!IsEditEmpty(GetDlgItem(hDlg, IDC_EXPORT_NAME_1 + i)))
+					{
+						totalNames ++;
+					}
+				}
+				StringCchPrintfW(nc, _countof(nc), L"nc: %d\n", totalNames);
+				yaml += nc;
+				yaml += L"names: [";
+				for (int i = 0; i < totalNames; ++i)
+				{
+					GetDlgItemText(hDlg, IDC_EXPORT_NAME_1 + i, name, _countof(name));
+					yaml += L"'";
+					yaml += name;
+					if (i == totalNames - 1)
+					{
+						yaml += L"'";
+					}
+					else
+					{
+						yaml += L"', ";
+					}
+				}
+				yaml += L"]";
+				std::wstring outPath = std::wstring(szFolderPath) + L"\\data.yaml";
+				WriteYaml(outPath, yaml);
+			}
 
 			DialogBoxParam(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEVIDEOPROGRESS), GetParent(hDlg), DlgProc_DatasetProcess, (LPARAM)params);
 			return TRUE;
