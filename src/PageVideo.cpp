@@ -281,7 +281,7 @@ void DoSelectImageFolder(HWND hWnd)
 
 void DoAnalyseVideo(const wchar_t* szFilePath)
 {
-	if (!szFilePath)
+	if (!szFilePath || !szFilePath[0])
 	{
 		return;
 	}
