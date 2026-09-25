@@ -44,7 +44,22 @@ BOOL isProcessExist = false;
 BOOL isPendingRefresh = false;
 History history;
 
+HBITMAP hbmScaledImage = NULL;
+int scaledW = 0;
+int scaledH = 0;
+std::wstring scaledForPath;
+RECT rcPicCtrl;
+int picCtrlWidth;
+int picCtrlHeight;
+
+HDC hdcBack = NULL;
+HBITMAP hbmBack = NULL;
+HBITMAP hbmBackOld = NULL;
+int backW = 0, backH = 0;
+HFONT hFont = NULL;
+
 void DoSelectFolder(HWND hWnd);
+void FreeScaledImageCache();
 BOOL IsImageFile(LPCWSTR szExt);
 BOOL DoCreateListView(HWND hWnd);
 void LoadBBoxesFromFile(const std::wstring& filePath, int imgWidth, int imgHeight);
@@ -84,6 +99,7 @@ void DoSelectFolder(HWND hWnd)
 					bboxes.clear();
 					selectedIndex = -1;
 					history.Clear();
+					FreeScaledImageCache();
 					if (GetDlgItem(hPagePicture, IDC_LISTVIEW))
 					{
 						ListView_SetItemState(GetDlgItem(hPagePicture, IDC_LISTVIEW), -1, 0, LVIS_SELECTED);
@@ -286,6 +302,106 @@ BOOL DoCreateListView(HWND hWnd)
 	return TRUE;
 }
 
+void FreeBackBuffer()
+{
+
+	if (hdcBack)
+	{
+		SelectObject(hdcBack, hbmBackOld);
+		DeleteObject(hbmBack);
+		DeleteDC(hdcBack);
+		hdcBack = NULL;
+		hbmBack = NULL;
+		hbmBackOld = NULL;
+	}
+	if (hbmBack)
+	{
+		DeleteObject(hbmBack);
+		hbmBack = NULL;
+	}
+	if (hFont)
+	{
+		DeleteObject(hFont);
+		hFont = NULL;
+	}
+	backW = 0;
+	backH = 0;
+}
+
+void EnsureBackBuffer(HWND hWnd, int w, int h)
+{
+	if (hdcBack && backW == w && backH == h) return;
+
+	if (hFont) { DeleteObject(hFont); hFont = NULL; }
+	if (hdcBack)
+	{
+		SelectObject(hdcBack, hbmBackOld);
+		DeleteObject(hbmBack);
+		DeleteDC(hdcBack);
+		hdcBack = NULL;
+	}
+
+	HDC hdcScreen = GetDC(hWnd);
+	hdcBack = CreateCompatibleDC(hdcScreen);
+	hbmBack = CreateCompatibleBitmap(hdcScreen, w, h);
+	hbmBackOld = (HBITMAP)SelectObject(hdcBack, hbmBack);
+	ReleaseDC(hWnd, hdcScreen);
+
+	int fontSize = IDCForDpi(hWnd, 30);
+	hFont = CreateFontW(fontSize, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
+		DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+		CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Microsoft Yahei UI");
+	SelectObject(hdcBack, hFont);
+
+	backW = w;
+	backH = h;
+}
+
+void FreeScaledImageCache()
+{
+	if (hbmScaledImage)
+	{
+		DeleteObject(hbmScaledImage);
+		hbmScaledImage = NULL;
+	}
+	scaledW = 0;
+	scaledH = 0;
+	scaledForPath.clear();
+}
+
+void RebuildScaledImageCache(int ctrlW, int ctrlH)
+{
+	FreeScaledImageCache();
+	if (!pCurrentImage)
+	{
+		return;
+	}
+	int imgW = pCurrentImage->GetWidth();
+	int imgH = pCurrentImage->GetHeight();
+	float ratio = min((float)ctrlW / imgW, (float)ctrlH / imgH);
+	int drawW = (int)(imgW * ratio);
+	int drawH = (int)(imgH * ratio);
+
+	HDC hdcScreen = GetDC(NULL);
+	HDC hdcMem = CreateCompatibleDC(hdcScreen);
+	hbmScaledImage = CreateCompatibleBitmap(hdcScreen, drawW, drawH);
+	HBITMAP hOld = (HBITMAP)SelectObject(hdcMem, hbmScaledImage);
+
+	{
+		Graphics g(hdcMem);
+		g.SetInterpolationMode(InterpolationModeHighQualityBicubic);
+		g.DrawImage(pCurrentImage, 0, 0, drawW, drawH);
+	}
+
+	SelectObject(hdcMem, hOld);
+	DeleteDC(hdcMem);
+	ReleaseDC(NULL, hdcScreen);
+
+	scaledW = drawW;
+	scaledH = drawH;
+	scaledForPath = currentImagePath;
+}
+
 void LoadImageToDisplay(LPCWSTR szFilePath)
 {
 	if (pCurrentImage && szFilePath && currentImagePath == szFilePath)
@@ -341,6 +457,7 @@ void LoadImageToDisplay(LPCWSTR szFilePath)
 	if (hImageCtrl)
 	{
 		history.Reset(bboxes, selectedIndex);
+		RebuildScaledImageCache(picCtrlWidth, picCtrlHeight);
 		InvalidateRect(hImageCtrl, NULL, FALSE);
 	}
 }
@@ -613,6 +730,8 @@ LRESULT CALLBACK PicSubclassProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 {
 	switch (message)
 	{
+	case WM_ERASEBKGND:
+		return TRUE;
 	case WM_PAINT:
 	{
 		PAINTSTRUCT ps;
@@ -622,44 +741,27 @@ LRESULT CALLBACK PicSubclassProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 		int w = rcClient.right - rcClient.left;
 		int h = rcClient.bottom - rcClient.top;
 
-		HDC hdcMem = CreateCompatibleDC(hdc);
-		HBITMAP hbmMem = CreateCompatibleBitmap(hdc, w, h);
-		HBITMAP hbmOld = (HBITMAP)SelectObject(hdcMem, hbmMem);
+		EnsureBackBuffer(hWnd, w, h);
+		FillRect(hdcBack, &rcClient, (HBRUSH)GetStockObject(WHITE_BRUSH));
 
-		HBRUSH hBrush = CreateSolidBrush(RGB(255, 255, 255));
-		FillRect(hdcMem, &rcClient, hBrush);
-		DeleteObject(hBrush);
-
-		int fontSize = IDCForDpi(hPagePicture, 30);
-
-		HFONT hFont = CreateFont(
-			fontSize, 0, 0, 0,
-			FW_BOLD, FALSE, FALSE, FALSE,
-			DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
-			DEFAULT_PITCH | FF_DONTCARE, L"Microsoft Yahei UI"
-		);
-		HFONT hOldFont = (HFONT)SelectObject(hdcMem, hFont);
-
-		if (pCurrentImage) 
+		if (hbmScaledImage) 
 		{
-			Graphics graphics(hdcMem);
-			int imgW = pCurrentImage->GetWidth();
-			int imgH = pCurrentImage->GetHeight();
-			float ratio = min((float)w / imgW, (float)h / imgH);
-			int drawW = (int)(imgW * ratio);
-			int drawH = (int)(imgH * ratio);
-			int x = (w - drawW) / 2;
-			int y = (h - drawH) / 2;
-			graphics.DrawImage(pCurrentImage, x, y, drawW, drawH);
+			HDC hdcImg = CreateCompatibleDC(hdcBack);
+			HBITMAP hOld = (HBITMAP)SelectObject(hdcImg, hbmScaledImage);
+			int x = (w - scaledW) / 2;
+			int y = (h - scaledH) / 2;
+			BitBlt(hdcBack, x, y, scaledW, scaledH, hdcImg, 0, 0, SRCCOPY);
+			SelectObject(hdcImg, hOld);
+			DeleteDC(hdcImg);
 		}
 		else 
 		{
-			SetBkMode(hdcMem, TRANSPARENT);
-			DrawText(hdcMem, L"从列表中单击选择一张图片", -1, &rcClient, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+			SetBkMode(hdcBack, TRANSPARENT);
+			DrawText(hdcBack, L"从列表中单击选择一张图片", -1, &rcClient, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 		}
 		{
 			int threshold = IDCForDpi(hPagePicture, iniBox);
-			Graphics graphics(hdcMem);
+			Graphics graphics(hdcBack);
 			Pen pen(Color(255, 59, 48, 0), threshold);
 			for (size_t i = 0; i < bboxes.size(); ++i) 
 			{
@@ -675,14 +777,8 @@ LRESULT CALLBACK PicSubclassProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 				}
 			}
 		}
-		BitBlt(hdc, rcClient.left, rcClient.top, w, h, hdcMem, 0, 0, SRCCOPY);
 
-		SelectObject(hdcMem, hOldFont);
-		DeleteObject(hFont);
-
-		SelectObject(hdcMem, hbmOld);
-		DeleteObject(hbmMem);
-		DeleteDC(hdcMem);
+		BitBlt(hdc, rcClient.left, rcClient.top, w, h, hdcBack, 0, 0, SRCCOPY);
 		EndPaint(hWnd, &ps);
 		return 0;
 	}
@@ -983,6 +1079,9 @@ LRESULT CALLBACK PicSubclassProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 		}
 		return FALSE;
 	}
+	case WM_DESTROY:
+		FreeBackBuffer();
+		return CallWindowProc(oldPicProc, hWnd, message, wParam, lParam);
 	}
 	return CallWindowProc(oldPicProc, hWnd, message, wParam, lParam);
 }
@@ -1045,6 +1144,9 @@ INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 			hDlg, (HMENU)IDC_PICTURE, GetModuleHandle(NULL), NULL
 		);
 		hImageCtrl = GetDlgItem(hDlg, IDC_PICTURE);
+		GetClientRect(hImageCtrl, &rcPicCtrl);
+		picCtrlHeight = rcPicCtrl.bottom - rcPicCtrl.top;
+		picCtrlWidth = rcPicCtrl.right - rcPicCtrl.left;
 		DoCreateListView(hDlg);
 		PostMessage(hDlg, WM_SIZE, 0, 0);
 		SendMessage(GetDlgItem(hDlg, IDC_NUMBER), CB_ADDSTRING, 0, (LPARAM)L"1");
@@ -1128,6 +1230,12 @@ INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 		SetWindowPos(GetDlgItem(hDlg, IDC_COLOR_8), NULL, workSpaceLeft + minLen + 7 * nameWidthWithMargin, wsFourthRowTop, nameWidth, 2 * margin, SWP_NOZORDER);
 		SetWindowPos(GetDlgItem(hDlg, IDC_COLOR_9), NULL, workSpaceLeft + minLen + 8 * nameWidthWithMargin, wsFourthRowTop, nameWidth, 2 * margin, SWP_NOZORDER);
 		SetWindowPos(GetDlgItem(hDlg, IDC_COLOR_10), NULL, workSpaceLeft + minLen + 9 * nameWidthWithMargin, wsFourthRowTop, nameWidth, 2 * margin, SWP_NOZORDER);
+
+		hImageCtrl = GetDlgItem(hDlg, IDC_PICTURE);
+		GetClientRect(hImageCtrl, &rcPicCtrl);
+		picCtrlHeight = rcPicCtrl.bottom - rcPicCtrl.top;
+		picCtrlWidth = rcPicCtrl.right - rcPicCtrl.left;
+		RebuildScaledImageCache(picCtrlWidth, picCtrlHeight);
 
 		return 0;
 	}
@@ -1416,6 +1524,7 @@ INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 		bboxes.clear();
 		selectedIndex = -1;
 		history.Clear();
+		FreeScaledImageCache();
 		InvalidateRect(GetDlgItem(hDlg, IDC_PICTURE), NULL, FALSE);
 		return TRUE;
 	}
@@ -1442,6 +1551,7 @@ INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 			delete pCurrentImage;
 			pCurrentImage = nullptr;
 		}
+		FreeScaledImageCache();
 		wchar_t szFullPath[MAX_PATH], szDiscardedPath[MAX_PATH], szNewPath[MAX_PATH];
 		StringCchPrintf(szFullPath, _countof(szFullPath), L"%s\\%s", szFolderPath, szFileName);
 		StringCchPrintf(szDiscardedPath, _countof(szDiscardedPath), L"%s\\Discarded", szFolderPath);
@@ -1454,6 +1564,8 @@ INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 			currentImagePath.clear();
 			bboxes.clear();
 			selectedIndex = -1;
+			history.Clear();
+			FreeScaledImageCache();
 			DWORD err = GetLastError();
 			wchar_t msg[128];
 			StringCchPrintf(msg, _countof(msg), L"移动图片失败，错误码：%lu", err);
@@ -1502,6 +1614,8 @@ INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 			currentImagePath.clear();
 			bboxes.clear();
 			selectedIndex = -1;
+			history.Clear();
+			FreeScaledImageCache();
 			InvalidateRect(GetDlgItem(hDlg, IDC_PICTURE), NULL, TRUE);
 		}
 		return TRUE;
@@ -1513,6 +1627,7 @@ INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 			delete pCurrentImage;
 			pCurrentImage = nullptr;
 		}
+		FreeScaledImageCache();
 	}
 	}
 	return FALSE;
