@@ -1,5 +1,5 @@
 # ARCHITECTURE
-> Version: 1.0.0 Dev 01003
+> Version: 1.0.1 Dev 01005
 > Language: Simplified Chinese
 
 # 技术栈

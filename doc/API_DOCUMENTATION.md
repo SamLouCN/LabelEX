@@ -1,5 +1,5 @@
 # LabelEX API Documentation
-> Version: 1.0.0 Dev 01003 
+> Version: 1.0.1 Dev 01005 
 > Language: Simplified Chinese
 
 ## Content
@@ -138,6 +138,20 @@ std::wstring currentImagePath;						//当前图片完整路径
 BOOL isProcessExist = false;						//刷新线程是否正在运行
 BOOL isPendingRefresh = false;						//刷新期间是否有新的刷新请求
 History history;									//撤销/重做栈
+
+HBITMAP hbmScaledImage = NULL;						//缩放后的图片位图缓存
+int scaledW = 0;									//缓存位图的宽
+int scaledH = 0;									//缓存位图的高
+std::wstring scaledForPath;							//缓存对应的图片路径（用于判断缓存是否失效）
+RECT rcPicCtrl;										//图片控件的客户区矩形
+int picCtrlWidth;									//图片控件宽度
+int picCtrlHeight;									//图片控件高度
+
+HDC hdcBack = NULL;									//后备缓冲 DC
+HBITMAP hbmBack = NULL;								//后备缓冲位图（与 hdcBack 配对）
+HBITMAP hbmBackOld = NULL;							//hdcBack 原有的位图
+int backW = 0, backH = 0;							//后备缓冲当前尺寸（用于判断是否需要重建）
+HFONT hFont = NULL;									//图片控件提示文字字体
 ```
 #### PageVideo.cpp
 ```cpp
@@ -234,6 +248,27 @@ BOOL DoCreateListView(HWND hWnd)
 - 简介：创建一个列表，此处为文件夹内图片的列表
 - 参数：父窗口句柄`hWnd`
 - 返回：创建失败时返回`FALSE`，创建成功时返回`TRUE`
+```cpp
+void FreeBackBuffer()
+```
+- 简介：释放后备缓冲相关的 GDI 对象（DC、位图、字体），窗口销毁时调用
+```cpp
+void EnsureBackBuffer(HWND hWnd, int w, int h)
+```
+确保后备缓冲有效
+- 简介：检查后备缓冲尺寸是否与目标一致，不一致则释放旧的并重建
+- 参数：窗口句柄hWnd，目标宽度w，目标高度h
+```cpp
+void FreeScaledImageCache()
+```
+释放缩放图缓存
+- 简介：释放缩放后的图片位图缓存及其尺寸、路径记录，与pCurrentImage同步调用
+```cpp
+void RebuildScaledImageCache(int ctrlW, int ctrlH)
+```
+重建缩放图缓存
+- 简介：先释放旧缓存，再将pCurrentImage按控件尺寸等比缩放后存入缓存位图，供WM_PAINT直接BitBlt使用
+- 参数：图片控件宽度ctrlW，图片控件高度ctrlH
 ```cpp
 void LoadImageToDisplay(LPCWSTR szFilePath)
 ```
