@@ -10,3 +10,4 @@ RD*
 CMakeSettings.json
 res/winres.h
 release/
+extern/

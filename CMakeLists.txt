@@ -12,6 +12,7 @@ set(FFMPEG_ROOT "D:/Projects/Reference/LEX_Ref_Repo/ffmpeg-8.1.2-full_build-shar
 include_directories(${FFMPEG_ROOT}/include)
 
 link_directories(${FFMPEG_ROOT}/lib)
+link_directories(${CMAKE_SOURCE_DIR}/lib)
 
 add_compile_definitions(UNICODE _UNICODE)
 
@@ -28,6 +29,7 @@ set(SOURCES
 set(HEADERS
 	src/main.h
 	src/resource.h
+	src/Darkmodelib.h
 )
 
 set(RESOURCES
@@ -60,6 +62,7 @@ target_link_libraries(${PROJECT_NAME}
 	avformat
 	avutil
 	swscale
+	darkmode
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES

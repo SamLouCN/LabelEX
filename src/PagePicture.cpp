@@ -1143,6 +1143,7 @@ INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 			0, 0, 0, 0,
 			hDlg, (HMENU)IDC_PICTURE, GetModuleHandle(NULL), NULL
 		);
+		
 		hImageCtrl = GetDlgItem(hDlg, IDC_PICTURE);
 		GetClientRect(hImageCtrl, &rcPicCtrl);
 		picCtrlHeight = rcPicCtrl.bottom - rcPicCtrl.top;
@@ -1176,6 +1177,7 @@ INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 
 		SendMessage(GetDlgItem(hDlg, IDC_NAME_1), BM_SETCHECK, BST_CHECKED, 0);
 		oldPicProc = (WNDPROC)SetWindowLongPtr(GetDlgItem(hDlg, IDC_PICTURE), GWLP_WNDPROC, (LONG_PTR)PicSubclassProc);
+		dmlib::setDarkWndNotifySafeEx(hDlg, true, true);
 		return 0;
 	}
 	case WM_SIZE:

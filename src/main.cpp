@@ -24,7 +24,8 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
 #include "main.h"
 
-using namespace Gdiplus;
+using namespace Gdiplus; 
+using namespace dmlib;
 
 static wchar_t szWindowClass[] = L"LEX";
 static wchar_t szTitle[] = L"LabelEX";
@@ -39,6 +40,7 @@ void StopFolderMonitor();
 BOOL StartFolderMonitor(HWND hDlg);
 
 int IDCForDpi(HWND hWnd, int oldIDC);
+BOOL darkMode = TRUE;
 
 HWND DoCreateMenu(HWND hWnd)
 {
@@ -267,6 +269,7 @@ int WINAPI wWinMain(
 	int nCmdShow
 )
 {
+	dmlib::initDarkMode();
 	SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
 	GdiplusStartupInput gdiplusStartupInput;
@@ -359,8 +362,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	switch (message)
 	{
 	case WM_CREATE:
+		dmlib::setDarkWndNotifySafeEx(hWnd, true, true);
 		DoCreateMenu(hWnd);
 		DoCreateDialog(hWnd, &hPagePicture, &hPageAudit);
+		dmlib::setWindowMenuBarSubclass(hWnd);
 		return 0;
 	case WM_COMMAND:
 	{
