@@ -15,6 +15,7 @@
 #define IDD_PAGECALI					511
 #define IDD_PAGEINTERFACECFG			701
 #define IDD_PAGEAUDIT					801
+#define IDD_PAGEGOTO					901
 #define IDC_PICTURE                     1004
 #define IDC_OK                          1005
 #define IDC_NAME_1                      1008
@@ -76,6 +77,7 @@
 #define IDC_UNDO						1063
 #define IDC_REDO						1064
 #define IDC_SAVE						1065
+#define IDC_GOTO						1066
 #define IDC_PICTURE_SL					2001
 #define IDC_ST_NAME						2002
 #define IDC_ST_VERSION					2003
@@ -145,7 +147,7 @@
 #define IDC_HANDLE_WIDTH				6004
 #define IDC_ST_THEME					6005
 #define IDC_THEME						6006
-
+#define IDC_SEARCH						9001
 
 // Next default values for new objects
 // 

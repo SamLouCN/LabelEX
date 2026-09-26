@@ -9,10 +9,13 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #define ID_OPEN_FOLDER 1002
 #define ID_EXPORT_CALI 1003
 #define ID_EXPORT_DATASET 1004
-#define ID_UNDO 2001
-#define ID_REDO 2002
-#define ID_DELETE_PHOTO 2003
-#define ID_AUDIT 2004
+#define ID_BACK 1005
+#define ID_BACKUP 1006
+#define ID_GOTO 2001
+#define ID_UNDO 2002
+#define ID_REDO 2003
+#define ID_DELETE_PHOTO 2004
+#define ID_AUDIT 2006
 #define ID_CONFIG_EXPORT 3001
 #define ID_CONFIG_INTERFACE 3002
 #define ID_VERSION 4001
@@ -21,6 +24,7 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #define WM_USER_UPDATE_ITEM (WM_USER + 101)
 #define WM_USER_DELETE_IMAGE (WM_USER + 104)
 #define WM_USER_DELETE_POINTER (WM_USER + 105)
+#define WM_USER_GOTO (WM_USER + 109)
 
 #include "main.h"
 
@@ -55,11 +59,15 @@ HWND DoCreateMenu(HWND hWnd)
 	AppendMenu(hSubMenuFile, MF_SEPARATOR, 0, NULL);
 	AppendMenu(hSubMenuFile, MF_STRING, ID_EXPORT_CALI, L"导出校准集");
 	AppendMenu(hSubMenuFile, MF_STRING, ID_EXPORT_DATASET, L"导出数据集");
+	//AppendMenu(hSubMenuFile, MF_SEPARATOR, 0, NULL);
+	//AppendMenu(hSubMenuFile, MF_STRING, ID_BACKUP, L"备份");
+	//AppendMenu(hSubMenuFile, MF_STRING, ID_BACK, L"回退");
+	AppendMenu(hSubMenuEdit, MF_STRING, ID_GOTO, L"转到");
 	AppendMenu(hSubMenuEdit, MF_STRING, ID_UNDO, L"撤销");
 	AppendMenu(hSubMenuEdit, MF_STRING, ID_REDO, L"重做");
 	AppendMenu(hSubMenuEdit, MF_STRING, ID_DELETE_PHOTO, L"删除此图片");
 	//AppendMenu(hSubMenuEdit, MF_SEPARATOR, 0, NULL);
-	//AppendMenu(hSubMenuEdit, MF_STRING, ID_AUDIT, L"审计...（暂无此功能）");
+	//AppendMenu(hSubMenuEdit, MF_STRING, ID_AUDIT, L"审计...");
 	AppendMenu(hSubMenuOption, MF_STRING, ID_CONFIG_INTERFACE, L"界面设置");
 	AppendMenu(hSubMenuAbout, MF_STRING, ID_VERSION, L"版本");
 	AppendMenu(hSubMenuAbout, MF_STRING, ID_MIT, L"许可证");
@@ -513,6 +521,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 		case IDC_DELETE_IMAGE:
 			SendMessage(hPagePicture, WM_USER_DELETE_IMAGE, 0, 0);
+			return 0;
+		case ID_GOTO:
+			SendMessage(hPagePicture, WM_USER_GOTO, 0, 0);
 			return 0;
 		case ID_UNDO:
 			SendMessage(hPagePicture, WM_COMMAND, MAKEWPARAM(IDC_UNDO, 0), 0);

@@ -8,6 +8,7 @@
 #define WM_USER_DELETE_IMAGE (WM_USER + 104)
 #define WM_USER_DELETE_POINTER (WM_USER + 105)
 #define WM_USER_CLEAR_PICTURE (WM_USER + 106)
+#define WM_USER_GOTO (WM_USER + 109)
 #define WM_USER_UPDATE_LISTVIEW (WM_USER + 200)
 #define WM_USER_UPDATE_PROGRESS (WM_USER + 201) 
 #define WM_USER_STOP_MARQUEE (WM_USER + 301)
@@ -471,6 +472,44 @@ void SelectImageByIndex(HWND hList, int index)
 	ListView_SetItemState(hList, -1, 0, LVIS_SELECTED);
 	ListView_SetItemState(hList, index, LVIS_SELECTED, LVIS_SELECTED);
 	ListView_EnsureVisible(hList, index, FALSE);
+}
+
+void SelectImageByText(HWND hList, LPCWSTR szText, int column = 1)
+{
+	if (hList == nullptr || szText == nullptr)
+	{
+		return;
+	}
+
+	int itemCount = ListView_GetItemCount(hList);
+	if (itemCount == 0)
+	{
+		return;
+	}
+
+	wchar_t buf[MAX_PATH] = { 0 };
+	int foundIndex = -1;
+
+	for (int i = 0; i < itemCount; ++i)
+	{
+		buf[0] = L'\0';
+		ListView_GetItemText(hList, i, column, buf, _countof(buf));
+
+		if (_wcsicmp(buf, szText) == 0)
+		{
+			foundIndex = i;
+			break;
+		}
+	}
+
+	if (foundIndex == -1)
+	{
+		return;
+	}
+
+	ListView_SetItemState(hList, -1, 0, LVIS_SELECTED);
+	ListView_SetItemState(hList, foundIndex, LVIS_SELECTED, LVIS_SELECTED);
+	ListView_EnsureVisible(hList, foundIndex, FALSE);
 }
 
 void SelectNextImage(HWND hList)
@@ -1093,6 +1132,61 @@ LRESULT CALLBACK PicSubclassProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 	return CallWindowProc(oldPicProc, hWnd, message, wParam, lParam);
 }
 
+INT_PTR CALLBACK DlgProc_Goto(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	switch (message)
+	{
+	case WM_INITDIALOG:
+	{
+		hProgressDlg = hDlg;
+		int baseWidth = 380;
+		int baseHeight = 130;
+		int scaledWidth = IDCForDpi(hDlg, baseWidth);
+		int scaledHeight = IDCForDpi(hDlg, baseHeight);
+		RECT rcParent;
+		HWND hParent = GetParent(hDlg);
+		hParent && GetWindowRect(hParent, &rcParent);
+		int x = rcParent.left + (rcParent.right - rcParent.left - scaledWidth) / 2;
+		int y = rcParent.top + (rcParent.bottom - rcParent.top - scaledHeight) / 2;
+		SetWindowPos(hDlg, NULL, x, y, scaledWidth, scaledHeight, SWP_NOZORDER);
+		SetWindowText(hDlg, L"转到");
+		dmlib::setDarkWndNotifySafeEx(hDlg, true, true);
+		return TRUE;
+	}
+	case WM_SIZE:
+	{
+		RECT rcDlg;
+		GetClientRect(hDlg, &rcDlg);
+		UINT margin = IDCForDpi(hDlg, 10);
+		UINT minLen = IDCForDpi(hDlg, 1);
+
+		SetWindowPos(GetDlgItem(hDlg, IDC_SEARCH), NULL, rcDlg.left + 2 * margin, rcDlg.top + 2 * margin, rcDlg.right - rcDlg.left - 4 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_OK), NULL, rcDlg.right - 8 * margin, rcDlg.top + 5 * margin, 6 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
+		return TRUE;
+	}
+	case WM_COMMAND:
+	{
+		int WM_ID = LOWORD(wParam);
+		switch (WM_ID)
+		{
+		case IDC_OK:
+		{
+			wchar_t fileName[MAX_PATH];
+			GetDlgItemText(hDlg, IDC_SEARCH, fileName, _countof(fileName));
+			SelectImageByText(GetDlgItem(hPagePicture, IDC_LISTVIEW), fileName);
+			
+			return TRUE;
+		}
+		}
+		return TRUE;
+	}
+	case WM_CLOSE:
+		EndDialog(hDlg, IDOK);
+		return TRUE;
+	}
+	return FALSE;
+}
+
 INT_PTR CALLBACK DlgProc_Process(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	switch (message)
@@ -1630,6 +1724,11 @@ INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 			FreeScaledImageCache();
 			InvalidateRect(GetDlgItem(hDlg, IDC_PICTURE), NULL, TRUE);
 		}
+		return TRUE;
+	}
+	case WM_USER_GOTO:
+	{
+		DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEGOTO), GetParent(hDlg), DlgProc_Goto);
 		return TRUE;
 	}
 	case WM_DESTROY:
