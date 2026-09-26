@@ -181,6 +181,8 @@ INT_PTR CALLBACK DlgProc_DatasetProcess(HWND hDlg, UINT message, WPARAM wParam, 
 		{
 			CloseHandle(hThread);
 		}
+		dmlib::setDarkWndNotifySafeEx(hDlg, true, true);
+
 		return TRUE;
 	}
 	case WM_SIZE:
@@ -218,7 +220,6 @@ INT_PTR CALLBACK DlgProc_Cali(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 		PostMessage(hDlg, WM_SIZE, 0, 0);
 		SetDlgItemInt(hDlg, IDC_CALI_PERCENT, 2, FALSE);
 		dmlib::setDarkWndNotifySafeEx(hDlg, true, true);
-
 		return TRUE;
 	}
 	case WM_SIZE:
@@ -301,7 +302,6 @@ INT_PTR CALLBACK DlgProc_Dataset(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 			SetDlgItemText(hDlg, IDC_EXPORT_NAME_1 + i, nameBuffer);
 		}
 		dmlib::setDarkWndNotifySafeEx(hDlg, true, true);
-
 		return TRUE;
 	}
 	case WM_SIZE:

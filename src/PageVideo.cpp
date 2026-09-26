@@ -563,6 +563,8 @@ INT_PTR CALLBACK DlgProc_VideoProgress(HWND hDlg, UINT message, WPARAM wParam, L
 		{
 			CloseHandle(hThread);
 		}
+		dmlib::setDarkWndNotifySafeEx(hDlg, true, true);
+
 		return TRUE;
 	}
 	case WM_SIZE:

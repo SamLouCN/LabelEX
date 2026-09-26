@@ -1,3 +1,9 @@
+FFmpeg
+Copyright (c) 2000-2025 Fabrice Bellard et al.
+Licensed under the GNU Lesser General Public License, version 2.1.
+You can obtain a copy of the LGPL at https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+Source: https://ffmpeg.org
+
                   GNU LESSER GENERAL PUBLIC LICENSE
                        Version 2.1, February 1999
 

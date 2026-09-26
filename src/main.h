@@ -83,7 +83,8 @@ BOOL StartFolderMonitor(HWND hDlg);
 BOOL IsImageFile(LPCWSTR szExt);
 void UpdateSingleItemStatus(HWND hDlg, LPCWSTR szBaseName, BOOL bExist);
 int IDCForDpi(HWND hWnd, int oldIDC);
-extern int selectedIndex;
 
+extern int selectedIndex;
+extern int Darkmode;
 extern wchar_t szFolderPath[MAX_PATH];
 extern HWND hPagePicture, hPageAbout, hPageMit, hPageCali, hPageVideo, hPageProcess, hPageDataset, hPageExportCfg, hPageInterfaceCfg;

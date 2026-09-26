@@ -83,6 +83,8 @@
 #define IDC_ST_ANNOUNCE					2005
 #define IDC_VIEW_INFO					2006
 #define IDC_ST_FFMPEG					2007
+#define IDC_ST_DARKMODE_1				2008
+#define IDC_ST_DARKMODE_2				2009
 #define IDC_LICENSE_TEXT				2101
 #define IDC_ST_SOURCE					3001
 #define IDC_SELECT_SOURCE				3002

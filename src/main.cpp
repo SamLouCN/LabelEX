@@ -40,6 +40,7 @@ void StopFolderMonitor();
 BOOL StartFolderMonitor(HWND hDlg);
 
 int IDCForDpi(HWND hWnd, int oldIDC);
+int Darkmode;
 
 HWND DoCreateMenu(HWND hWnd)
 {
@@ -269,7 +270,7 @@ int WINAPI wWinMain(
 )
 {
 	dmlib::initDarkMode();
-	int Darkmode = ini.GetInt(L"Interface", L"theme_mode", 0);
+	Darkmode = ini.GetInt(L"Interface", L"theme_mode", 0);
 	if (Darkmode == 0)
 	{
 		dmlib::setDarkModeConfig();
@@ -286,6 +287,8 @@ int WINAPI wWinMain(
 	{
 		dmlib::setDarkModeConfig();
 	}
+	dmlib::setDefaultColors(true);
+
 	SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
 	GdiplusStartupInput gdiplusStartupInput;
@@ -378,11 +381,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	switch (message)
 	{
 	case WM_CREATE:
+	{
 		dmlib::setDarkWndNotifySafeEx(hWnd, true, true);
 		DoCreateMenu(hWnd);
 		DoCreateDialog(hWnd, &hPagePicture, &hPageAudit);
 		dmlib::setWindowMenuBarSubclass(hWnd);
 		return 0;
+	}
 	case WM_COMMAND:
 	{
 		int WM_ID = LOWORD(wParam);

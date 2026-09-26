@@ -15,6 +15,10 @@ INT_PTR CALLBACK DlgProc_InterfaceCfg(HWND hDlg, UINT message, WPARAM wParam, LP
 		SetWindowText(hDlg, L"界面设置");
 		HICON hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_MAIN_ICON));
 		SendMessage(hDlg, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
+		SendMessage(GetDlgItem(hDlg, IDC_THEME), CB_ADDSTRING, 0, (LPARAM)L"跟随系统");
+		SendMessage(GetDlgItem(hDlg, IDC_THEME), CB_ADDSTRING, 0, (LPARAM)L"浅色");
+		SendMessage(GetDlgItem(hDlg, IDC_THEME), CB_ADDSTRING, 0, (LPARAM)L"深色");
+		SendMessage(GetDlgItem(hDlg, IDC_THEME), CB_SETCURSEL, ini.GetInt(L"Interface", L"theme_mode", 0), 0);
 		SendMessage(GetDlgItem(hDlg, IDC_RECT_WIDTH), CB_ADDSTRING, 0, (LPARAM)L"1");
 		SendMessage(GetDlgItem(hDlg, IDC_RECT_WIDTH), CB_ADDSTRING, 0, (LPARAM)L"2");
 		SendMessage(GetDlgItem(hDlg, IDC_RECT_WIDTH), CB_ADDSTRING, 0, (LPARAM)L"3");
@@ -32,10 +36,6 @@ INT_PTR CALLBACK DlgProc_InterfaceCfg(HWND hDlg, UINT message, WPARAM wParam, LP
 		SendMessage(GetDlgItem(hDlg, IDC_HANDLE_WIDTH), CB_ADDSTRING, 0, (LPARAM)L"12");
 		SendMessage(GetDlgItem(hDlg, IDC_HANDLE_WIDTH), CB_ADDSTRING, 0, (LPARAM)L"14");
 		SendMessage(GetDlgItem(hDlg, IDC_HANDLE_WIDTH), CB_SETCURSEL, ini.GetInt(L"Interface", L"handle_width", 8)/2 - 1, 0);
-		SendMessage(GetDlgItem(hDlg, IDC_THEME), CB_ADDSTRING, 0, (LPARAM)L"跟随系统");
-		SendMessage(GetDlgItem(hDlg, IDC_THEME), CB_ADDSTRING, 0, (LPARAM)L"浅色");
-		SendMessage(GetDlgItem(hDlg, IDC_THEME), CB_ADDSTRING, 0, (LPARAM)L"深色");
-		SendMessage(GetDlgItem(hDlg, IDC_THEME), CB_SETCURSEL, 0, 0);
 		PostMessage(hDlg, WM_SIZE, 0, 0);
 		dmlib::setDarkWndNotifySafeEx(hDlg, true, true);
 		return TRUE;

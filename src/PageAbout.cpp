@@ -30,6 +30,8 @@ INT_PTR CALLBACK DlgProc_About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		SetWindowPos(GetDlgItem(hDlg, IDC_ST_COPYRIGHT), NULL, rcDlg.left + 15 * margin, rcDlg.top + 9 * margin, rcDlg.right - rcDlg.left - 2 * margin, 2 * margin, SWP_NOZORDER);
 		SetWindowPos(GetDlgItem(hDlg, IDC_ST_ANNOUNCE), NULL, rcDlg.left + 15 * margin, rcDlg.top + 11 * margin, rcDlg.right - rcDlg.left - 2 * margin, 2 * margin, SWP_NOZORDER);
 		SetWindowPos(GetDlgItem(hDlg, IDC_ST_FFMPEG), NULL, rcDlg.left + 15 * margin, rcDlg.top + 13 * margin, rcDlg.right - rcDlg.left - 2 * margin, 2 * margin, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_ST_DARKMODE_1), NULL, rcDlg.left + 15 * margin, rcDlg.top + 15 * margin, rcDlg.right - rcDlg.left - 2 * margin, 2 * margin, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_ST_DARKMODE_2), NULL, rcDlg.left + 15 * margin, rcDlg.top + 17 * margin, rcDlg.right - rcDlg.left - 2 * margin, 2 * margin, SWP_NOZORDER);
 		SetWindowPos(GetDlgItem(hDlg, IDC_OK), NULL, rcDlg.right - 12 * margin, rcDlg.bottom - 4 * margin, 11 * margin, 3 * margin, SWP_NOZORDER);
 		return TRUE;
 	}
@@ -92,7 +94,16 @@ INT_PTR CALLBACK DlgProc_Mit(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPar
 			L"Street, Fifth Floor, Boston, MA 02110 - 1301 USA.\r\n\r\n"
 			L"LabelEX dynamically links to the unmodified FFmpeg libraries.\r\n\r\n"
 			L"The source code for FFmpeg used in this project is available at :\r\n"
-			L"[https://git.ffmpeg.org/ffmpeg.git]";
+			L"[https://git.ffmpeg.org/ffmpeg.git]\r\n"
+			L"This project, LabelEX, uses the library 'win32-darkmodelib'.\r\n"
+			L"Mozilla Public License 2.0 (MPL-2.0)\r\n"
+			L"Copyright (c) 2025-2026 ozone10\r\n"
+			L"Based on the Notepad++ dark mode code licensed under GPLv3,\r\n"
+			L"originally by adzm / Adam D. Walling,\r\n"
+			L"heavily modified by ozone10, relicensed under MPL-2.0 with permission.\r\n"
+			L"Source: [https://github.com/ozone10/win32-darkmodelib]\r\n"
+			L"License text: [https://mozilla.org/MPL/2.0/]\r\n"
+			L"\r\n";
 		SetDlgItemText(hDlg, IDC_LICENSE_TEXT, licenseText);
 		PostMessage(hDlg, WM_SIZE, 0, 0);
 		dmlib::setDarkWndNotifySafeEx(hDlg, true, true);

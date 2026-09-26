@@ -742,7 +742,12 @@ LRESULT CALLBACK PicSubclassProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 		int h = rcClient.bottom - rcClient.top;
 
 		EnsureBackBuffer(hWnd, w, h);
-		FillRect(hdcBack, &rcClient, (HBRUSH)GetStockObject(WHITE_BRUSH));
+		bool systemIsDark = dmlib::isDarkModeReg();
+
+
+		COLORREF backColor = dmlib::isExperimentalActive() ? RGB(24, 24, 24) : RGB(255, 255, 255);
+		SetDCBrushColor(hdcBack, backColor);
+		FillRect(hdcBack, &rcClient, (HBRUSH)GetStockObject(DC_BRUSH));
 
 		if (hbmScaledImage) 
 		{
@@ -757,6 +762,8 @@ LRESULT CALLBACK PicSubclassProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 		else 
 		{
 			SetBkMode(hdcBack, TRANSPARENT);
+			COLORREF textColor = dmlib::isExperimentalActive() ? RGB(240, 240, 240) : RGB(0, 0, 0);
+			SetTextColor(hdcBack, textColor);
 			DrawText(hdcBack, L"从列表中单击选择一张图片", -1, &rcClient, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 		}
 		{
@@ -1109,6 +1116,8 @@ INT_PTR CALLBACK DlgProc_Process(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 		{
 			CloseHandle(hThread);
 		}
+		dmlib::setDarkWndNotifySafeEx(hDlg, true, true);
+
 		return TRUE;
 	}
 	case WM_USER_STOP_MARQUEE:
@@ -1178,6 +1187,7 @@ INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 		SendMessage(GetDlgItem(hDlg, IDC_NAME_1), BM_SETCHECK, BST_CHECKED, 0);
 		oldPicProc = (WNDPROC)SetWindowLongPtr(GetDlgItem(hDlg, IDC_PICTURE), GWLP_WNDPROC, (LONG_PTR)PicSubclassProc);
 		dmlib::setDarkWndNotifySafeEx(hDlg, true, true);
+
 		return 0;
 	}
 	case WM_SIZE:
