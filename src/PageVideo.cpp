@@ -616,6 +616,7 @@ INT_PTR CALLBACK DlgProc_Video(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 
 		SendMessage(hDlg, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
 		PostMessage(hDlg, WM_SIZE, 0, 0);
+		dmlib::setDarkWndNotifySafeEx(hDlg, true, true);
 		return TRUE;
 	}
 	case WM_SIZE:

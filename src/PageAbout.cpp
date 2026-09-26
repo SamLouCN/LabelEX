@@ -14,7 +14,8 @@ INT_PTR CALLBACK DlgProc_About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		HICON hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_MAIN_ICON));
 		SendMessage(hDlg, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
 		PostMessage(hDlg, WM_SIZE, 0, 0);
-		
+		dmlib::setDarkWndNotifySafeEx(hDlg, true, true);
+
 		return TRUE;
 	}
 	case WM_SIZE:
@@ -94,6 +95,7 @@ INT_PTR CALLBACK DlgProc_Mit(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPar
 			L"[https://git.ffmpeg.org/ffmpeg.git]";
 		SetDlgItemText(hDlg, IDC_LICENSE_TEXT, licenseText);
 		PostMessage(hDlg, WM_SIZE, 0, 0);
+		dmlib::setDarkWndNotifySafeEx(hDlg, true, true);
 
 		return TRUE;
 	}

@@ -141,6 +141,8 @@
 #define IDC_ST_HANDLE_WIDTH				6002
 #define IDC_RECT_WIDTH					6003
 #define IDC_HANDLE_WIDTH				6004
+#define IDC_ST_THEME					6005
+#define IDC_THEME						6006
 
 
 // Next default values for new objects

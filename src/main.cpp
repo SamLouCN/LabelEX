@@ -40,7 +40,6 @@ void StopFolderMonitor();
 BOOL StartFolderMonitor(HWND hDlg);
 
 int IDCForDpi(HWND hWnd, int oldIDC);
-BOOL darkMode = TRUE;
 
 HWND DoCreateMenu(HWND hWnd)
 {
@@ -270,6 +269,23 @@ int WINAPI wWinMain(
 )
 {
 	dmlib::initDarkMode();
+	int Darkmode = ini.GetInt(L"Interface", L"theme_mode", 0);
+	if (Darkmode == 0)
+	{
+		dmlib::setDarkModeConfig();
+	}
+	else if (Darkmode == 1)
+	{
+		dmlib::setDarkModeConfigEx(static_cast<UINT>(dmlib::DarkModeType::light));
+	}
+	else if (Darkmode == 2)
+	{
+		dmlib::setDarkModeConfigEx(static_cast<UINT>(dmlib::DarkModeType::dark));
+	}
+	else
+	{
+		dmlib::setDarkModeConfig();
+	}
 	SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
 	GdiplusStartupInput gdiplusStartupInput;

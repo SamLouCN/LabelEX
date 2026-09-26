@@ -217,6 +217,8 @@ INT_PTR CALLBACK DlgProc_Cali(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 		SendMessage(hDlg, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
 		PostMessage(hDlg, WM_SIZE, 0, 0);
 		SetDlgItemInt(hDlg, IDC_CALI_PERCENT, 2, FALSE);
+		dmlib::setDarkWndNotifySafeEx(hDlg, true, true);
+
 		return TRUE;
 	}
 	case WM_SIZE:
@@ -298,6 +300,8 @@ INT_PTR CALLBACK DlgProc_Dataset(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 			GetDlgItemText(hPagePicture, IDC_NAMEEDIT_1 + i, nameBuffer, _countof(nameBuffer));
 			SetDlgItemText(hDlg, IDC_EXPORT_NAME_1 + i, nameBuffer);
 		}
+		dmlib::setDarkWndNotifySafeEx(hDlg, true, true);
+
 		return TRUE;
 	}
 	case WM_SIZE:
@@ -362,6 +366,7 @@ INT_PTR CALLBACK DlgProc_Dataset(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 
 		SetWindowPos(GetDlgItem(hDlg, IDC_EXPORT), NULL, rcDlg.right - 9 * margin, tenthRowTop, 7 * margin, 3 * margin, SWP_NOZORDER);
 		SendMessage(GetDlgItem(hDlg, IDC_ST_EXPORT_CONFIG), WM_SETFONT, (WPARAM)hFont, TRUE);
+
 		return TRUE;
 	}
 	case WM_CLOSE:
