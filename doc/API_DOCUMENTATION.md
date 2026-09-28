@@ -1,5 +1,5 @@
 # LabelEX API Documentation
-> Version: 1.0.0 Dev 01003 
+> Version: 1.1.0 Dev 01105 
 > Language: Simplified Chinese
 
 ## Content
@@ -193,7 +193,19 @@ int IDCForDpi(HWND hWnd, int oldIDC)
 - 简介：当外界调用此函数时，自动按dpi重新计算控件大小
 - 参数：父窗口句柄`hWnd`，当前控件大小`oldIDC`
 - 返回：新控件大小`newIDC`
-
+```cpp
+static BOOL IsFocusOnEditControl()
+```
+判断焦点是否在某一个Edit Control内
+- 简介：防止快捷键与Edit Control起冲突
+- 返回：在Edit Control内时返回`TRUE`, 不在时返回`FALSE`
+```cpp
+static BOOL IsFocusInPage(HWND hPage)
+```
+判断焦点是否在某一个页面内
+- 简介：为快捷键提供快速判断，使得此快捷键只服务此界面
+- 参数：页面句柄 `hPage`
+- 返回：在此页面内时返回`TRUE`, 不在时返回`FALSE`
 #### PagePicture.cpp
 ```cpp
 void DoSelectFolder(HWND hWnd)

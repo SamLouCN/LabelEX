@@ -50,6 +50,7 @@ LabelEX
 │   ├── PageConfig.cpp # configuration page
 │   ├── ini.h # .ini files operations
 │   ├── history.h # undo and redo utilities
+│   ├── Darkmodelib.h # darkmode basic configurations
 │	└── resource.h # resource ID
 ├── res/
 │   ├── LabelEX.rc # resource files
