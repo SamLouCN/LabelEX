@@ -63,6 +63,51 @@ INT_PTR CALLBACK DlgProc_About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	return FALSE;
 }
 
+INT_PTR CALLBACK DlgProc_ReleaseNote(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	switch (message)
+	{
+	case WM_INITDIALOG:
+	{
+		SetWindowText(hDlg, L"Release Note");
+		HICON hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_MAIN_ICON));
+		SendMessage(hDlg, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
+		LPCWSTR releaseNote = L"Release Note\r\n\r\n"
+			L"VERSION 1.1.0\r\n"
+			L"Developer Build Version 01105\r\n\r\n"
+			L"修复\r\n"
+			L"子页面下也能保存图片并跳转到下一张的bug\r\n\r\n"
+			L"新增\r\n"
+			L"深色模式\r\n"
+			L"转到任意图片\r\n"
+			L"任何子页面下的Enter确定/导出功能和Esc退出功能\r\n";
+		SetDlgItemText(hDlg, IDC_RELEASE_NOTE, releaseNote);
+		PostMessage(hDlg, WM_SIZE, 0, 0);
+		dmlib::setDarkWndNotifySafeEx(hDlg, true, true);
+		return TRUE;
+	}
+	case WM_SIZE:
+	{
+		RECT rcDlg;
+		GetClientRect(hDlg, &rcDlg);
+		UINT margin = IDCForDpi(hDlg, 10);
+		UINT minLen = IDCForDpi(hDlg, 1);
+		SetWindowPos(GetDlgItem(hDlg, IDC_RELEASE_NOTE), NULL, rcDlg.left + margin, rcDlg.top + margin, rcDlg.right - rcDlg.left - 2 * margin, rcDlg.bottom - rcDlg.top - 2 * margin, SWP_NOZORDER);
+		return TRUE;
+	}
+	case WM_CLOSE:
+	{
+		DestroyWindow(hDlg);
+		if (hPagePicture && IsWindow(hPagePicture))
+		{
+			SetFocus(GetDlgItem(hPagePicture, IDC_PICTURE));
+		}
+		return TRUE;
+	}
+	}
+	return FALSE;
+}
+
 INT_PTR CALLBACK DlgProc_Mit(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	switch (message)

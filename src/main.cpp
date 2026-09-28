@@ -20,6 +20,7 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #define ID_CONFIG_INTERFACE 3002
 #define ID_VERSION 4001
 #define ID_MIT 4002
+#define ID_RELEASE_NOTE 4003
 #define WM_USER_REFRESH_LIST (WM_USER + 100)
 #define WM_USER_UPDATE_ITEM (WM_USER + 101)
 #define WM_USER_DELETE_IMAGE (WM_USER + 104)
@@ -36,7 +37,7 @@ static wchar_t szTitle[] = L"LabelEX";
 HINSTANCE hInst;
 HANDLE hExitEvent = NULL;
 HANDLE hMonitorThread = NULL;
-HWND hPagePicture, hPageAbout, hPageMit, hPageVideo, hPageProcess, hPageCali, hPageDataset, hPageExportCfg, hPageInterfaceCfg, hPageAudit, hGoToDlg;
+HWND hPagePicture, hPageAbout, hPageMit, hPageVideo, hPageProcess, hPageCali, hPageDataset, hPageExportCfg, hPageInterfaceCfg, hPageAudit, hGoToDlg, hPageReleaseNote;
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 BOOL DoCreateDialog(HWND hWnd, HWND* hPagePicture, HWND* hPageAudit);
@@ -71,6 +72,7 @@ HWND DoCreateMenu(HWND hWnd)
 	AppendMenu(hSubMenuOption, MF_STRING, ID_CONFIG_INTERFACE, L"界面设置");
 	AppendMenu(hSubMenuAbout, MF_STRING, ID_VERSION, L"版本");
 	AppendMenu(hSubMenuAbout, MF_STRING, ID_MIT, L"许可证");
+	AppendMenu(hSubMenuAbout, MF_STRING, ID_RELEASE_NOTE, L"更新日志");
 
 	AppendMenu(hMenu, MF_STRING | MF_POPUP, (UINT_PTR)hSubMenuFile, L"文件(&F)");
 	AppendMenu(hMenu, MF_STRING | MF_POPUP, (UINT_PTR)hSubMenuEdit, L"编辑(&E)");
@@ -548,6 +550,24 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			int y = rcParent.top + (rcParent.bottom - rcParent.top - dialogHeight) / 2;
 			SetWindowPos(hPageMit, NULL, x, y, dialogWidth, dialogHeight, SWP_NOZORDER);
 			ShowWindow(hPageMit, SW_SHOW);
+			return 0;
+		}
+		case ID_RELEASE_NOTE:
+		{
+			if (hPageReleaseNote && IsWindow(hPageReleaseNote))
+			{
+				SetForegroundWindow(hPageReleaseNote);
+				return 0;
+			}
+			hPageReleaseNote = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGERELEASENOTE), hWnd, DlgProc_ReleaseNote);
+			RECT rcParent;
+			GetWindowRect(hWnd, &rcParent);
+			int dialogWidth = IDCForDpi(hPageReleaseNote, 500);
+			int dialogHeight = IDCForDpi(hPageReleaseNote, 400);
+			int x = rcParent.left + (rcParent.right - rcParent.left - dialogWidth) / 2;
+			int y = rcParent.top + (rcParent.bottom - rcParent.top - dialogHeight) / 2;
+			SetWindowPos(hPageReleaseNote, NULL, x, y, dialogWidth, dialogHeight, SWP_NOZORDER);
+			ShowWindow(hPageReleaseNote, SW_SHOW);
 			return 0;
 		}
 		case ID_OPEN_FOLDER:

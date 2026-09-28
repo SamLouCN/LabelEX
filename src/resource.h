@@ -8,6 +8,7 @@
 #define IDD_PAGEPICTURE                 101
 #define IDD_PAGEABOUT	                201
 #define IDD_PAGEMIT						211
+#define IDD_PAGERELEASENOTE				221
 #define IDD_PAGEVIDEO					301
 #define IDD_PAGEPROCESS					401
 #define IDD_PAGEVIDEOPROGRESS			411
@@ -88,6 +89,7 @@
 #define IDC_ST_DARKMODE_1				2008
 #define IDC_ST_DARKMODE_2				2009
 #define IDC_LICENSE_TEXT				2101
+#define IDC_RELEASE_NOTE				2201
 #define IDC_ST_SOURCE					3001
 #define IDC_SELECT_SOURCE				3002
 #define IDC_SOURCE						3003

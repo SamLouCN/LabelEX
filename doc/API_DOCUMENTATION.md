@@ -1,5 +1,5 @@
 # LabelEX API Documentation
-> Version: 1.1.0 Dev 01105 
+> Version: 1.2.0 Dev 01200 
 > Language: Simplified Chinese
 
 ## Content

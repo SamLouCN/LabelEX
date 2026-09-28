@@ -77,6 +77,7 @@ INT_PTR CALLBACK DlgProc_Cali(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 INT_PTR CALLBACK DlgProc_Dataset(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
 INT_PTR CALLBACK DlgProc_InterfaceCfg(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
 INT_PTR CALLBACK DlgProc_Audit(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
+INT_PTR CALLBACK DlgProc_ReleaseNote(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
 
 void DoSelectFolder(HWND hWnd);
 void StopFolderMonitor();
@@ -88,4 +89,4 @@ int IDCForDpi(HWND hWnd, int oldIDC);
 extern int selectedIndex;
 extern int Darkmode;
 extern wchar_t szFolderPath[MAX_PATH];
-extern HWND hPagePicture, hPageAbout, hPageMit, hPageCali, hPageVideo, hPageProcess, hPageDataset, hPageExportCfg, hPageInterfaceCfg, hGoToDlg;
+extern HWND hPagePicture, hPageAbout, hPageMit, hPageCali, hPageVideo, hPageProcess, hPageDataset, hPageExportCfg, hPageInterfaceCfg, hGoToDlg, hPageReleaseNote;
