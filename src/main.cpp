@@ -36,7 +36,7 @@ static wchar_t szTitle[] = L"LabelEX";
 HINSTANCE hInst;
 HANDLE hExitEvent = NULL;
 HANDLE hMonitorThread = NULL;
-HWND hPagePicture, hPageAbout, hPageMit, hPageVideo, hPageProcess, hPageCali, hPageDataset, hPageExportCfg, hPageInterfaceCfg, hPageAudit;
+HWND hPagePicture, hPageAbout, hPageMit, hPageVideo, hPageProcess, hPageCali, hPageDataset, hPageExportCfg, hPageInterfaceCfg, hPageAudit, hGoToDlg;
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 BOOL DoCreateDialog(HWND hWnd, HWND* hPagePicture, HWND* hPageAudit);
@@ -270,6 +270,18 @@ static BOOL IsFocusOnEditControl()
 	return (_wcsicmp(szClass, L"Edit") == 0);
 }
 
+static BOOL IsFocusInPage(HWND hPage)
+{
+	if (!hPage) return FALSE;
+	HWND h = GetFocus();
+	while (h)
+	{
+		if (h == hPage) return TRUE;
+		h = GetParent(h);
+	}
+	return FALSE;
+}
+
 int WINAPI wWinMain(
 	HINSTANCE hInstance,
 	HINSTANCE hPrevInstance,
@@ -355,19 +367,120 @@ int WINAPI wWinMain(
 
 	while (GetMessage(&msg, NULL, 0, 0))
 	{
-		BOOL bPicHandlesDelete =
-			(msg.message == WM_KEYDOWN &&
-				msg.wParam == VK_DELETE &&
-				GetFocus() == GetDlgItem(hPagePicture, IDC_PICTURE) &&
-				selectedIndex != -1);
-
 		BOOL bEditFocused = IsFocusOnEditControl();
 
-		if (!bPicHandlesDelete && !bEditFocused &&
-			hAccel && TranslateAccelerator(hWnd, hAccel, &msg))
+		BOOL bPicWantsEnter = (msg.message == WM_KEYDOWN 
+			&& msg.wParam == VK_RETURN 
+			&& !bEditFocused && IsFocusInPage(hPagePicture)
+		);
+
+		BOOL bPicWantsDelete = (msg.message == WM_KEYDOWN
+			&& msg.wParam == VK_DELETE
+			&& GetFocus() == GetDlgItem(hPagePicture, IDC_PICTURE) && selectedIndex != -1
+		);
+
+		BOOL bConfigWantsEnter = (msg.message == WM_KEYDOWN
+			&& msg.wParam == VK_RETURN
+			&& !bEditFocused && IsFocusInPage(hPageInterfaceCfg)
+		);
+
+		BOOL bConfigWantsEscape = (msg.message == WM_KEYDOWN
+			&& msg.wParam == VK_ESCAPE
+			&& !bEditFocused && IsFocusInPage(hPageInterfaceCfg)
+		);
+
+		BOOL bVideoWantsEnter = (msg.message == WM_KEYDOWN
+			&& msg.wParam == VK_RETURN
+			&& !bEditFocused && IsFocusInPage(hPageVideo)
+		);
+
+		BOOL bVideoWantsEscape = (msg.message == WM_KEYDOWN
+			&& msg.wParam == VK_ESCAPE
+			&& !bEditFocused && IsFocusInPage(hPageVideo)
+		);
+
+		BOOL bExportCaliWantsEnter = (msg.message == WM_KEYDOWN
+			&& msg.wParam == VK_RETURN
+			&& IsFocusInPage(hPageCali)
+		);
+
+		BOOL bExportCaliWantsEscape = (msg.message == WM_KEYDOWN
+			&& msg.wParam == VK_ESCAPE
+			&& IsFocusInPage(hPageCali)
+		);
+
+		BOOL bExportDatasetWantsEnter = (msg.message == WM_KEYDOWN
+			&& msg.wParam == VK_RETURN
+			&& IsFocusInPage(hPageDataset)
+		);
+
+		BOOL bExportDatasetWantsEscape = (msg.message == WM_KEYDOWN
+			&& msg.wParam == VK_ESCAPE
+			&& IsFocusInPage(hPageDataset)
+		);
+
+		if (bPicWantsEnter)
 		{
+			SendMessage(hPagePicture, WM_COMMAND, MAKEWPARAM(IDC_OK, 0), 0);
 			continue;
 		}
+
+		if (bPicWantsDelete)
+		{
+			SendMessage(GetDlgItem(hPagePicture, IDC_PICTURE), WM_KEYDOWN, VK_DELETE, 0);
+			continue;
+		}
+
+		if (bConfigWantsEnter)
+		{
+			SendMessage(hPageInterfaceCfg, WM_COMMAND, MAKEWPARAM(IDC_OK, 0), 0);
+			continue;
+		}
+
+		if (bConfigWantsEscape)
+		{
+			SendMessage(hPageInterfaceCfg, WM_CLOSE, 0, 0);
+			continue;
+		}
+
+		if (bVideoWantsEnter)
+		{
+			SendMessage(hPageVideo, WM_COMMAND, MAKEWPARAM(IDC_EXPORT, 0), 0);
+			continue;
+		}
+
+		if (bVideoWantsEscape)
+		{
+			SendMessage(hPageVideo, WM_CLOSE, 0, 0);
+			continue;
+		}
+
+		if (bExportCaliWantsEnter)
+		{
+			SendMessage(hPageCali, WM_COMMAND, MAKEWPARAM(IDC_EXPORT, 0), 0);
+			continue;
+		}
+
+		if (bExportCaliWantsEscape)
+		{
+			SendMessage(hPageCali, WM_CLOSE, 0, 0);
+			continue;
+		}
+
+		if (bExportDatasetWantsEnter)
+		{
+			SendMessage(hPageDataset, WM_COMMAND, MAKEWPARAM(IDC_EXPORT, 0), 0);
+			continue;
+		}
+
+		if (bExportDatasetWantsEscape)
+		{
+			SendMessage(hPageDataset, WM_CLOSE, 0, 0);
+			continue;
+		}
+
+		if (!bEditFocused && hAccel && TranslateAccelerator(hWnd, hAccel, &msg))
+			continue;
 
 		if (IsDialogMessage(hPageVideo, &msg) ||
 			IsDialogMessage(hPageCali, &msg) ||
@@ -376,7 +489,7 @@ int WINAPI wWinMain(
 		{
 			continue;
 		}
-
+		
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}
@@ -522,6 +635,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case IDC_DELETE_IMAGE:
 			SendMessage(hPagePicture, WM_USER_DELETE_IMAGE, 0, 0);
 			return 0;
+		case IDC_GOTO:
 		case ID_GOTO:
 			SendMessage(hPagePicture, WM_USER_GOTO, 0, 0);
 			return 0;

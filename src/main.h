@@ -88,4 +88,4 @@ int IDCForDpi(HWND hWnd, int oldIDC);
 extern int selectedIndex;
 extern int Darkmode;
 extern wchar_t szFolderPath[MAX_PATH];
-extern HWND hPagePicture, hPageAbout, hPageMit, hPageCali, hPageVideo, hPageProcess, hPageDataset, hPageExportCfg, hPageInterfaceCfg;
+extern HWND hPagePicture, hPageAbout, hPageMit, hPageCali, hPageVideo, hPageProcess, hPageDataset, hPageExportCfg, hPageInterfaceCfg, hGoToDlg;

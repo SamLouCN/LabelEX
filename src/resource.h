@@ -72,7 +72,7 @@
 #define IDC_SWITCH_CLASS7				1058
 #define IDC_SWITCH_CLASS8				1059
 #define IDC_SWITCH_CLASS9				1060
-#define IDC_SWITCH_NEXT					1061
+//#define IDC_SWITCH_NEXT					1061
 #define IDC_DELETE_IMAGE				1062
 #define IDC_UNDO						1063
 #define IDC_REDO						1064

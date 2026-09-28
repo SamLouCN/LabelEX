@@ -42,6 +42,10 @@ INT_PTR CALLBACK DlgProc_About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		{
 		case IDC_OK:
 			DestroyWindow(hDlg);
+			if (hPagePicture && IsWindow(hPagePicture))
+			{
+				SetFocus(GetDlgItem(hPagePicture, IDC_PICTURE));
+			}
 			return TRUE;
 		}
 		return TRUE;
@@ -49,6 +53,10 @@ INT_PTR CALLBACK DlgProc_About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	case WM_CLOSE:
 	{
 		DestroyWindow(hDlg);
+		if (hPagePicture && IsWindow(hPagePicture))
+		{
+			SetFocus(GetDlgItem(hPagePicture, IDC_PICTURE));
+		}
 		return TRUE;
 	}
 	}
@@ -122,6 +130,10 @@ INT_PTR CALLBACK DlgProc_Mit(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPar
 	case WM_CLOSE:
 	{
 		DestroyWindow(hDlg);
+		if (hPagePicture && IsWindow(hPagePicture))
+		{
+			SetFocus(GetDlgItem(hPagePicture, IDC_PICTURE));
+		}
 		return TRUE;
 	}
 	}

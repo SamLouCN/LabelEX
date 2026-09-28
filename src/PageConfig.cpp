@@ -84,6 +84,10 @@ INT_PTR CALLBACK DlgProc_InterfaceCfg(HWND hDlg, UINT message, WPARAM wParam, LP
 			ini.SetInt(L"Interface", L"box_width", threshold);
 			ini.SetInt(L"Interface", L"handle_width", thresholdHandle);
 			DestroyWindow(hDlg);
+			if (hPagePicture && IsWindow(hPagePicture))
+			{
+				SetFocus(GetDlgItem(hPagePicture, IDC_PICTURE));
+			}
 			return TRUE;
 		}
 		}
@@ -92,6 +96,10 @@ INT_PTR CALLBACK DlgProc_InterfaceCfg(HWND hDlg, UINT message, WPARAM wParam, LP
 	case WM_CLOSE:
 	{
 		DestroyWindow(hDlg);
+		if (hPagePicture && IsWindow(hPagePicture))
+		{
+			SetFocus(GetDlgItem(hPagePicture, IDC_PICTURE));
+		}
 		return TRUE;
 	}
 	}

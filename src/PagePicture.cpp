@@ -283,7 +283,7 @@ BOOL DoCreateListView(HWND hWnd)
 	);
 	if (hList == NULL)
 	{
-		MessageBox(NULL, L"Failed to create ListView", L"Error", NULL);
+		MessageBox(hPagePicture, L"Failed to create ListView", L"Error", NULL);
 		return FALSE;
 	}
 
@@ -655,6 +655,10 @@ void SaveBBoxesToFile(HWND hWnd, const std::vector<BBox>& boxes, int imgWidth, i
 {
 	if (boxes.empty()) {
 		MessageBox(hWnd, L"No Label added!", L"Notice", MB_OK);
+		if (hPagePicture && IsWindow(hPagePicture))
+		{
+			SetFocus(GetDlgItem(hPagePicture, IDC_PICTURE));
+		}
 		return;
 	}
 	FILE* file = nullptr;
@@ -662,6 +666,10 @@ void SaveBBoxesToFile(HWND hWnd, const std::vector<BBox>& boxes, int imgWidth, i
 	if (err != 0 || file == nullptr)
 	{
 		MessageBox(hWnd, L"Failed to create txt file", L"Error", MB_OK);
+		if (hPagePicture && IsWindow(hPagePicture))
+		{
+			SetFocus(GetDlgItem(hPagePicture, IDC_PICTURE));
+		}
 		return;
 	}
 
@@ -1138,7 +1146,7 @@ INT_PTR CALLBACK DlgProc_Goto(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 	{
 	case WM_INITDIALOG:
 	{
-		hProgressDlg = hDlg;
+		hGoToDlg = hDlg;
 		int baseWidth = 380;
 		int baseHeight = 130;
 		int scaledWidth = IDCForDpi(hDlg, baseWidth);
@@ -1174,7 +1182,17 @@ INT_PTR CALLBACK DlgProc_Goto(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 			wchar_t fileName[MAX_PATH];
 			GetDlgItemText(hDlg, IDC_SEARCH, fileName, _countof(fileName));
 			SelectImageByText(GetDlgItem(hPagePicture, IDC_LISTVIEW), fileName);
-			
+			SendMessage(hDlg, WM_CLOSE, 0, 0);
+			return TRUE;
+		}
+		case IDCANCEL:
+		{
+			SendMessage(hDlg, WM_CLOSE, 0, 0);
+			return TRUE;
+		}
+		case IDOK:
+		{
+			SendMessage(hDlg, WM_COMMAND, MAKEWPARAM(IDC_OK, 0), 0);
 			return TRUE;
 		}
 		}
@@ -1182,6 +1200,10 @@ INT_PTR CALLBACK DlgProc_Goto(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 	}
 	case WM_CLOSE:
 		EndDialog(hDlg, IDOK);
+		if (hPagePicture && IsWindow(hPagePicture))
+		{
+			SetFocus(GetDlgItem(hPagePicture, IDC_PICTURE));
+		}
 		return TRUE;
 	}
 	return FALSE;
@@ -1409,7 +1431,7 @@ INT_PTR CALLBACK DlgProc_Picture(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
 		int WM_CODE = HIWORD(wParam);
 		switch (WM_ID)
 		{
-		case IDC_SWITCH_NEXT:
+		//case IDC_SWITCH_NEXT:
 		case IDC_SAVE:
 		case IDC_OK:
 		{

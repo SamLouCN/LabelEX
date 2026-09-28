@@ -752,6 +752,10 @@ INT_PTR CALLBACK DlgProc_Video(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	case WM_CLOSE:
 	{
 		DestroyWindow(hDlg);
+		if (hPagePicture && IsWindow(hPagePicture))
+		{
+			SetFocus(GetDlgItem(hPagePicture, IDC_PICTURE));
+		}
 		return TRUE;
 	}
 	case WM_DESTROY:
