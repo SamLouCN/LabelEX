@@ -58,6 +58,13 @@ HBITMAP hbmBackOld = NULL;
 int backW = 0, backH = 0;
 HFONT hFont = NULL;
 
+HCURSOR hCrossCursor = LoadCursor(NULL, IDC_CROSS);
+HCURSOR hWECursor = LoadCursor(NULL, IDC_SIZEWE);
+HCURSOR hNSCursor = LoadCursor(NULL, IDC_SIZENS);
+HCURSOR hNESWCursor = LoadCursor(NULL, IDC_SIZENESW);
+HCURSOR hNWSECursor = LoadCursor(NULL, IDC_SIZENWSE);
+HCURSOR hMvCursor = LoadCursor(NULL, IDC_SIZEALL);
+
 void DoSelectFolder(HWND hWnd);
 void FreeScaledImageCache();
 BOOL IsImageFile(LPCWSTR szExt);
@@ -726,6 +733,19 @@ void DoRedo(HWND hImg)
 	}
 }
 
+HCURSOR GetResizeCursor(int handle)
+{
+	switch (handle)
+	{
+	case 0: case 4: return hNWSECursor;
+	case 1: case 5: return hNSCursor;
+	case 2: case 6: return hNESWCursor;
+	case 3: case 7: return hWECursor;
+	default:
+		return LoadCursor(NULL, IDC_ARROW);
+	}
+}
+
 LRESULT CALLBACK PicSubclassProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	switch (message)
@@ -889,6 +909,66 @@ LRESULT CALLBACK PicSubclassProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 			InvalidateRect(hWnd, NULL, FALSE);
 		}
 		return 0;
+	}
+	case WM_SETCURSOR:
+	{
+		if (LOWORD(lParam) != HTCLIENT)
+		{
+			break;
+		}
+
+		if (dragMode == Moving)
+		{
+			SetCursor(hMvCursor);
+			return TRUE;
+		}
+		if (dragMode == Resizing)
+		{
+			SetCursor(GetResizeCursor(resizeHandle));
+			return TRUE;
+		}
+		if (dragMode == Creating)
+		{
+			SetCursor(hCrossCursor);
+			return TRUE;
+		}
+		
+		POINT ptCtrl;
+		GetCursorPos(&ptCtrl);
+		ScreenToClient(hWnd, &ptCtrl);
+
+		int handle = HitTestHandle(hWnd, ptCtrl);
+		if (handle != -1)
+		{
+			SetCursor(GetResizeCursor(handle));
+			return TRUE;
+		}
+
+		POINT ptImg = ControlToImage(ptCtrl);
+		int expand = IDCForDpi(hPagePicture, iniBox);
+		for (int i = (int)bboxes.size() - 1; i >= 0; --i)
+		{
+			const BBox& box = bboxes[i];
+			if (ptImg.x >= box.left - expand && ptImg.x <= box.right + expand &&
+				ptImg.y >= box.top - expand && ptImg.y <= box.bottom + expand)
+			{
+				SetCursor(hMvCursor);
+				return TRUE;
+			}
+		}
+
+		if (pCurrentImage)
+		{
+			if (ptImg.x >= 0 && ptImg.x < pCurrentImage->GetWidth() &&
+				ptImg.y >= 0 && ptImg.y < pCurrentImage->GetHeight())
+			{
+				SetCursor(hCrossCursor);
+				return TRUE;
+			}
+		}
+
+		SetCursor(LoadCursor(NULL, IDC_ARROW));
+		return TRUE;
 	}
 	case WM_MOUSEMOVE:
 	{
