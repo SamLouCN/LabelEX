@@ -1,5 +1,5 @@
 # LabelEX User Manual
-> Version: 1.0.1 Dev 01005  
+> Version: 1.0.2 Dev 01008  
 > Language: Simplified Chinese
 
 ## 目录
