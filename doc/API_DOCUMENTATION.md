@@ -1,5 +1,5 @@
 # LabelEX API Documentation
-> Version: 1.1.0 Dev 01105 
+> Version: 1.1.1 Dev 01108 
 > Language: Simplified Chinese
 
 ## Content
@@ -144,6 +144,7 @@ History history;									//撤销/重做栈
 wchar_t szVideoPath[MAX_PATH] = { 0 };				//视频路径
 HWND hVideoProgress = NULL;							//视频处理窗口句柄
 int videoCount;										//视频计数
+int expectedExport;									//期待的输出FPS
 ```
 #### PageExport.cpp
 ```cpp
