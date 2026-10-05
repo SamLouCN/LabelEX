@@ -16,6 +16,7 @@
 wchar_t szVideoPath[MAX_PATH] = { 0 };
 HWND hVideoProgress = NULL;
 int videoCount;
+int expectedExport;
 
 struct ThreadParams
 {
@@ -323,6 +324,28 @@ void DoAnalyseVideo(const wchar_t* szFilePath)
 	AVCodecParameters* pCodecParams = videoStream->codecpar;
 	const char* codecName = avcodec_get_name(pCodecParams->codec_id);
 	SetDlgItemTextA(hPageVideo, IDC_SOURCE_FORM, codecName);
+	int64_t duration = pFormatContext->duration;
+	double durationSeconds;
+	if (pFormatContext->duration != AV_NOPTS_VALUE)
+	{
+		durationSeconds = (double)pFormatContext->duration / AV_TIME_BASE;
+	}
+	else
+	{
+		if (videoStream->duration != AV_NOPTS_VALUE && videoStream->time_base.den != 0)
+		{
+			durationSeconds = (double)videoStream->duration * videoStream->time_base.num / videoStream->time_base.den;
+		}
+	}
+
+	int totalSec = (int)durationSeconds;
+	expectedExport = totalSec;
+	int hh = totalSec / 3600;
+	int mm = (totalSec % 3600) / 60;
+	int ss = totalSec % 60;
+	wchar_t durationBuf[32];
+	StringCchPrintf(durationBuf, _countof(durationBuf), L"%02d:%02d:%02d", hh, mm, ss);
+	SetDlgItemText(hPageVideo, IDC_SOURCE_DUE, (LPCWSTR)durationBuf);
 	wchar_t sourceRes[20];
 	StringCchPrintf(sourceRes, _countof(sourceRes), L"%dx%d", pCodecParams->width, pCodecParams->height);
 	SetDlgItemText(hPageVideo, IDC_SOURCE_RES, (LPCWSTR)(sourceRes));
@@ -627,7 +650,7 @@ INT_PTR CALLBACK DlgProc_Video(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		GetClientRect(hDlg, &rcDlg);
 		UINT margin = IDCForDpi(hDlg, 10);
 		UINT minLen = IDCForDpi(hDlg, 1);
-		UINT fontHeight = IDCForDpi(hDlg, 19);
+		UINT fontHeight = IDCForDpi(hDlg, 20);
 
 		UINT firstColumnLeft = 2 * margin;
 		UINT secondColumnLeft = 17 * margin;
@@ -640,6 +663,8 @@ INT_PTR CALLBACK DlgProc_Video(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		UINT sixthRowTop = 17 * margin;
 		UINT seventhRowTop = 21 * margin;
 		UINT eighthRowTop = 24 * margin;
+		UINT ninthRowTop = 27 * margin;
+		UINT tenthRowTop = 30 * margin;
 
 		if (hFont)
 		{
@@ -656,25 +681,29 @@ INT_PTR CALLBACK DlgProc_Video(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		SetWindowPos(GetDlgItem(hDlg, IDC_SELECT_SOURCE), NULL, 51 * margin + 2 * minLen, secondRowTop, 5 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
 		SetWindowPos(GetDlgItem(hDlg, IDC_ST_SOURCE_INFO), NULL, firstColumnLeft, thirdRowTop + 2 * minLen, 8 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
 		SetWindowPos(GetDlgItem(hDlg, IDC_ST_SOURCE_FORM), NULL, firstColumnLeft, fourthRowTop, 5 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
-		SetWindowPos(GetDlgItem(hDlg, IDC_SOURCE_FORM), NULL, firstColumnLeft + 5 * margin, fourthRowTop - 2 * minLen, 10 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
-		SetWindowPos(GetDlgItem(hDlg, IDC_ST_SOURCE_RES), NULL, secondColumnLeft + 2 * margin, fourthRowTop, 6 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
-		SetWindowPos(GetDlgItem(hDlg, IDC_SOURCE_RES), NULL, secondColumnLeft + 8 * margin, fourthRowTop - 2 * minLen, 12 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
-		SetWindowPos(GetDlgItem(hDlg, IDC_ST_SOURCE_FPS), NULL, thirdColumnLeft + 7 * margin, fourthRowTop, 5 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
-		SetWindowPos(GetDlgItem(hDlg, IDC_SOURCE_FPS), NULL, thirdColumnLeft + 12 * margin, fourthRowTop - 2 * minLen, 6 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
-		SetWindowPos(GetDlgItem(hDlg, IDC_ST_EXPORT_DIR), NULL, firstColumnLeft, fifthRowTop + 2 * minLen, 8 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
-		SetWindowPos(GetDlgItem(hDlg, IDC_EXPORT_DIR), NULL, firstColumnLeft, sixthRowTop, 49 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
-		SetWindowPos(GetDlgItem(hDlg, IDC_SELECT_EXPORT), NULL, 51 * margin + 2 * minLen, sixthRowTop, 5 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
-		SetWindowPos(GetDlgItem(hDlg, IDC_ST_EXPORT_FORM), NULL, firstColumnLeft, seventhRowTop, 7 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
-		SetWindowPos(GetDlgItem(hDlg, IDC_EXPORT_FORM), NULL, firstColumnLeft + 7 *margin, seventhRowTop - 2 * minLen, 6 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
-		SetWindowPos(GetDlgItem(hDlg, IDC_ST_EXPORT_QUALITY), NULL, secondColumnLeft, seventhRowTop, 7 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
-		SetWindowPos(GetDlgItem(hDlg, IDC_EXPORT_QUALITY), NULL, secondColumnLeft + 7 * margin, seventhRowTop - 2 * minLen, 6 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
-		SetWindowPos(GetDlgItem(hDlg, IDC_ST_EXPORT_FPS), NULL, thirdColumnLeft, seventhRowTop, 11 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
-		SetWindowPos(GetDlgItem(hDlg, IDC_EXPORT_FPS), NULL, thirdColumnLeft + 11 * margin, seventhRowTop - 2 * minLen, 6 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
-		SetWindowPos(GetDlgItem(hDlg, IDC_EXPORT), NULL, rcDlg.right - 9 * margin, eighthRowTop, 7 * margin, 3 * margin, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_SOURCE_FORM), NULL, firstColumnLeft + 6 * margin, fourthRowTop - 2 * minLen, 10 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_ST_SOURCE_DUE), NULL, thirdColumnLeft - 4 * margin - 2 * minLen, fourthRowTop, 5 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_SOURCE_DUE), NULL, thirdColumnLeft + 2 * margin - 4 * minLen, fourthRowTop - 2 * minLen, 10 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_ST_SOURCE_RES), NULL, firstColumnLeft, fifthRowTop, 6 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_SOURCE_RES), NULL, firstColumnLeft + 6 * margin, fifthRowTop - 2 * minLen, 10 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_ST_SOURCE_FPS), NULL, thirdColumnLeft - 4 * margin - 2 * minLen, fifthRowTop, 5 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_SOURCE_FPS), NULL, thirdColumnLeft + 2 * margin - 4 * minLen, fifthRowTop - 2 * minLen, 10 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_ST_EXPORT_DIR), NULL, firstColumnLeft, sixthRowTop, 8 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_EXPORT_DIR), NULL, firstColumnLeft, seventhRowTop - margin, 49 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_SELECT_EXPORT), NULL, 51 * margin + 2 * minLen, seventhRowTop - margin, 5 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_ST_EXPORT_FORM), NULL, firstColumnLeft, eighthRowTop, 7 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_EXPORT_FORM), NULL, firstColumnLeft + 7 *margin, eighthRowTop - 2 * minLen, 6 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_ST_EXPORT_QUALITY), NULL, secondColumnLeft, eighthRowTop, 7 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_EXPORT_QUALITY), NULL, secondColumnLeft + 7 * margin, eighthRowTop - 2 * minLen, 6 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_ST_EXPORT_FPS), NULL, thirdColumnLeft, eighthRowTop, 11 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_EXPORT_FPS), NULL, thirdColumnLeft + 11 * margin, eighthRowTop - 2 * minLen, 6 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_ST_EXPORT_IMAGE), NULL, firstColumnLeft, ninthRowTop, 15 * margin, 2 * margin + 3 * minLen, SWP_NOZORDER);
+		SetWindowPos(GetDlgItem(hDlg, IDC_EXPORT), NULL, rcDlg.right - 9 * margin, tenthRowTop, 7 * margin, 3 * margin, SWP_NOZORDER);
 
 		SendMessage(GetDlgItem(hDlg, IDC_ST_SOURCE), WM_SETFONT, (WPARAM)hFont, TRUE);
 		SendMessage(GetDlgItem(hDlg, IDC_ST_SOURCE_INFO), WM_SETFONT, (WPARAM)hFont, TRUE);
 		SendMessage(GetDlgItem(hDlg, IDC_ST_EXPORT_DIR), WM_SETFONT, (WPARAM)hFont, TRUE);
+		ShowWindow(GetDlgItem(hDlg, IDC_ST_EXPORT_IMAGE), SW_HIDE);
 		return TRUE;
 	}
 	case WM_COMMAND:
@@ -707,6 +736,15 @@ INT_PTR CALLBACK DlgProc_Video(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		{
 			DoSelectImageFolder(hPageVideo);
 			SetDlgItemText(hDlg, IDC_EXPORT_DIR, (LPWSTR)szFolderPath);
+			return TRUE;
+		}
+		case IDC_EXPORT_FPS:
+		{
+			int exportFps = 0;
+			exportFps = GetDlgItemInt(hDlg, IDC_EXPORT_FPS, NULL, FALSE);
+			wchar_t exptImgCount[32] = {};
+			StringCchPrintf(exptImgCount, _countof(exptImgCount), L"将会导出约%d张图片", expectedExport * exportFps + 1);
+			SetDlgItemText(hDlg, IDC_ST_EXPORT_IMAGE, exptImgCount);
 			return TRUE;
 		}
 		case IDC_EXPORT:
@@ -747,6 +785,10 @@ INT_PTR CALLBACK DlgProc_Video(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		int sourceFps = GetDlgItemInt(hDlg, IDC_SOURCE_FPS, NULL, FALSE);
 		int targetFps = (int)(sourceFps / 2);
 		SetDlgItemInt(hDlg, IDC_EXPORT_FPS, targetFps, FALSE);
+		wchar_t exptImgCount[32] = {};
+		StringCchPrintf(exptImgCount, _countof(exptImgCount), L"将会导出约%d张图片", expectedExport * targetFps + 1);
+		SetDlgItemText(hDlg, IDC_ST_EXPORT_IMAGE, exptImgCount);
+		ShowWindow(GetDlgItem(hPageVideo, IDC_ST_EXPORT_IMAGE), SW_SHOW);
 		return TRUE;
 	}
 	case WM_CLOSE:
