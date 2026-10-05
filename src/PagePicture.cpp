@@ -660,14 +660,6 @@ int HitTestHandle(HWND hWnd, POINT ptCtrl)
 
 void SaveBBoxesToFile(HWND hWnd, const std::vector<BBox>& boxes, int imgWidth, int imgHeight, std::wstring& filePath) 
 {
-	if (boxes.empty()) {
-		MessageBox(hWnd, L"No Label added!", L"Notice", MB_OK);
-		if (hPagePicture && IsWindow(hPagePicture))
-		{
-			SetFocus(GetDlgItem(hPagePicture, IDC_PICTURE));
-		}
-		return;
-	}
 	FILE* file = nullptr;
 	errno_t err = _wfopen_s(&file, filePath.c_str(), L"w");
 	if (err != 0 || file == nullptr)
