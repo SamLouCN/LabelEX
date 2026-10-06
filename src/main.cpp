@@ -586,7 +586,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			RECT rcParent;
 			GetWindowRect(hWnd, &rcParent);
 			int dialogWidth = IDCForDpi(hPageVideo, 600);
-			int dialogHeight = IDCForDpi(hPageVideo, 330);
+			int dialogHeight = IDCForDpi(hPageVideo, 390);
 			int x = rcParent.left + (rcParent.right - rcParent.left - dialogWidth) / 2;
 			int y = rcParent.top + (rcParent.bottom - rcParent.top - dialogHeight) / 2;
 			SetWindowPos(hPageVideo, NULL, x, y, dialogWidth, dialogHeight, SWP_NOZORDER);
