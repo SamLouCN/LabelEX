@@ -284,6 +284,38 @@ static BOOL IsFocusInPage(HWND hPage)
 	return FALSE;
 }
 
+static BOOL IsPicturePageActive()
+{
+	if (!hPagePicture || !IsWindowVisible(hPagePicture)) return FALSE;
+
+	HWND hRoot = GetAncestor(hPagePicture, GA_ROOT);
+	if (!hRoot) return FALSE;
+
+	HWND hFore = GetForegroundWindow();
+	if (!hFore) return FALSE;
+
+	return (hFore == hRoot);
+}
+
+static BOOL CALLBACK DisableImeExceptEdit(HWND hWnd, LPARAM)
+{
+	wchar_t className[64] = {};
+	if (!GetClassNameW(hWnd, className, _countof(className)))
+		return TRUE;
+
+	if (_wcsicmp(className, L"Edit") != 0)
+		ImmAssociateContext(hWnd, nullptr);
+
+	return TRUE;
+}
+
+static void ConfigureWindowIme(HWND hWnd)
+{
+	DisableImeExceptEdit(hWnd, 0);
+	EnumChildWindows(hWnd, DisableImeExceptEdit, 0);
+}
+
+
 int WINAPI wWinMain(
 	HINSTANCE hInstance,
 	HINSTANCE hPrevInstance,
@@ -360,6 +392,9 @@ int WINAPI wWinMain(
 		hInstance,
 		NULL
 	);
+
+	ConfigureWindowIme(hWnd);
+
 	ShowWindow(hWnd, nCmdShow);
 	UpdateWindow(hWnd);
 
@@ -420,6 +455,22 @@ int WINAPI wWinMain(
 			&& msg.wParam == VK_ESCAPE
 			&& IsFocusInPage(hPageDataset)
 		);
+
+		BOOL bMark0 = (
+			msg.message == WM_KEYDOWN
+			&& msg.wParam == VK_OEM_3
+			&& !bEditFocused
+			&& IsPicturePageActive()
+		);
+
+		if (bMark0
+			&& !(GetKeyState(VK_CONTROL) & 0x8000)
+			&& !(GetKeyState(VK_MENU) & 0x8000)
+			&& !(GetKeyState(VK_SHIFT) & 0x8000))
+		{
+			SendMessage(hPagePicture, WM_COMMAND, MAKEWPARAM(IDC_SWITCH_CLASS0, 0), 0);
+			continue;
+		}
 
 		if (bPicWantsEnter)
 		{
@@ -524,6 +575,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				return 0;
 			}
 			hPageAbout = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEABOUT), hWnd, DlgProc_About);
+			if (hPageAbout)
+			{
+				ConfigureWindowIme(hPageAbout);
+			}
 			RECT rcParent;
 			GetWindowRect(hWnd, &rcParent);
 			int dialogWidth = IDCForDpi(hPageAbout, 500);
@@ -542,6 +597,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				return 0;
 			}
 			hPageMit = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEMIT), hWnd, DlgProc_Mit);
+			if (hPageMit)
+			{
+				ConfigureWindowIme(hPageMit);
+			}
 			RECT rcParent;
 			GetWindowRect(hWnd, &rcParent);
 			int dialogWidth = IDCForDpi(hPageMit, 500);
@@ -560,6 +619,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				return 0;
 			}
 			hPageReleaseNote = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGERELEASENOTE), hWnd, DlgProc_ReleaseNote);
+			if (hPageReleaseNote)
+			{
+				ConfigureWindowIme(hPageReleaseNote);
+			}
 			RECT rcParent;
 			GetWindowRect(hWnd, &rcParent);
 			int dialogWidth = IDCForDpi(hPageReleaseNote, 500);
@@ -583,6 +646,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				return 0;
 			}
 			hPageVideo = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEVIDEO), hWnd, DlgProc_Video);
+			if (hPageVideo)
+			{
+				ConfigureWindowIme(hPageVideo);
+			}
 			RECT rcParent;
 			GetWindowRect(hWnd, &rcParent);
 			int dialogWidth = IDCForDpi(hPageVideo, 600);
@@ -601,6 +668,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				return 0;
 			}
 			hPageCali = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGECALI), hWnd, DlgProc_Cali);
+			if (hPageCali)
+			{
+				ConfigureWindowIme(hPageCali);
+			}
 			RECT rcParent;
 			GetWindowRect(hWnd, &rcParent);
 			int dialogWidth = IDCForDpi(hPageCali, 360);
@@ -619,6 +690,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				return 0;
 			}
 			hPageDataset = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEDATASET), hWnd, DlgProc_Dataset);
+			if (hPageDataset)
+			{
+				ConfigureWindowIme(hPageDataset);
+			}
 			RECT rcParent;
 			GetWindowRect(hWnd, &rcParent);
 			int dialogWidth = IDCForDpi(hPageDataset, 600);
@@ -637,6 +712,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				return 0;
 			}
 			hPageInterfaceCfg = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PAGEINTERFACECFG), hWnd, DlgProc_InterfaceCfg);
+			if (hPageInterfaceCfg)
+			{
+				ConfigureWindowIme(hPageInterfaceCfg);
+			}
 			RECT rcParent;
 			GetWindowRect(hWnd, &rcParent);
 			int dialogWidth = IDCForDpi(hPageInterfaceCfg, 315);

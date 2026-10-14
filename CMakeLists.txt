@@ -63,6 +63,7 @@ target_link_libraries(${PROJECT_NAME}
 	avutil
 	swscale
 	darkmode
+	imm32
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
