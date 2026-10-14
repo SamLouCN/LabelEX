@@ -17,6 +17,7 @@ extern "C" {
 #include <shlwapi.h>
 #include <strsafe.h>
 #include <gdiplus.h>
+#include <imm.h>
 #include <vector>
 #include <random>
 #include <numeric>
